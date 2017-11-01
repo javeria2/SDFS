@@ -1,13 +1,15 @@
 package main
 
-import (
-  "fmt"
+var (
+  fileMap  map[string][]uint32 // comes from sdfs.go
+  isMaster = false
 )
+
 /**
   File op: STORE, Prints the files on the current node.
 */
 func store() {
-  fmt.Println("hello from store")
+  
 }
 
 /**
