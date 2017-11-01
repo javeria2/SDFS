@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SDFS/protocol-buffer"
+	"SDFSs/protocol-buffer"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -249,15 +249,15 @@ func handleUserInput() {
 					localFileName, sdfsFileName := s[1], s[2]
 					putFile(localFileName, sdfsFileName)
 
-			} else if(string.HasPrefix(input, "get")) {
+			} else if(strings.HasPrefix(input, "get")) {
 					localFileName, sdfsFileName := s[2], s[1]
 					getFile(localFileName, sdfsFileName)
 
-			} else if(string.HasPrefix(input, "delete")) {
+			} else if(strings.HasPrefix(input, "delete")) {
 					sdfsFileName := s[1]
 					deleteFile(sdfsFileName)
 
-			} else if(string.HasPrefix(input, "ls")) {
+			} else if(strings.HasPrefix(input, "ls")) {
 					sdfsFileName := s[1]
 					lsFile(sdfsFileName)
 
