@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SDFSs/protocol-buffer"
+	"SDFS/protocol-buffer"
 	"encoding/binary"
 	"fmt"
 	"log"
