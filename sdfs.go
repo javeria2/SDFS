@@ -1,10 +1,13 @@
 package main
 
+import (
+  "fmt"
+)
 /**
   File op: STORE, Prints the files on the current node.
 */
 func store() {
-
+  fmt.Println("hello from store")
 }
 
 /**
