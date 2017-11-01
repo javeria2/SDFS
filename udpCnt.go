@@ -18,7 +18,7 @@ import (
 
 const (
 	introducerID = 0
-	nodeName     = "fa17-cs425-g28-%02d.cs.illinois.edu%s"
+	nodeName     = "fa17-cs425-g40-%02d.cs.illinois.edu%s"
 	port         = ":3333"
 	listLength   = 10
 	targetNum    = 4
