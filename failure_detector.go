@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SDFS/protocol-buffer"
+	"cs425_mp2/protocol-buffer"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -242,24 +242,24 @@ func handleUserInput() {
 		case "leave":
 			nodeLeave()
 		case "store":
-			store()
+			store() //comes from sdfs.go
 		default:
 			s := strings.Split(input, " ")
 			if(strings.HasPrefix(input, "put")) {
 					localFileName, sdfsFileName := s[1], s[2]
-					putFile(localFileName, sdfsFileName)
+					putFile(localFileName, sdfsFileName) //comes from sdfs.go
 
 			} else if(strings.HasPrefix(input, "get")) {
 					localFileName, sdfsFileName := s[2], s[1]
-					getFile(localFileName, sdfsFileName)
+					getFile(localFileName, sdfsFileName) //comes from sdfs.go
 
 			} else if(strings.HasPrefix(input, "delete")) {
 					sdfsFileName := s[1]
-					deleteFile(sdfsFileName)
+					deleteFile(sdfsFileName) //comes from sdfs.go
 
 			} else if(strings.HasPrefix(input, "ls")) {
 					sdfsFileName := s[1]
-					lsFile(sdfsFileName)
+					lsFile(sdfsFileName) //comes from sdfs.go
 
 			} else {
 			 fmt.Println("Incorrect input. Please try again.")
