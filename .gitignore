@@ -16,3 +16,5 @@
 .DS_Store
 
 cs425_mp2
+
+*.log
