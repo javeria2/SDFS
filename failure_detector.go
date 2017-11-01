@@ -241,8 +241,29 @@ func handleUserInput() {
 			nodeJoin()
 		case "leave":
 			nodeLeave()
+		case "store":
+			store()
 		default:
-			fmt.Println("Incorrect input. Please try again.")
+			s := strings.Split(input, " ")
+			if(strings.HasPrefix(input, "put")) {
+					localFileName, sdfsFileName := s[1], s[2]
+					putFile(localFileName, sdfsFileName)
+
+			} else if(string.HasPrefix(input, "get")) {
+					localFileName, sdfsFileName := s[2], s[1]
+					getFile(localFileName, sdfsFileName)
+
+			} else if(string.HasPrefix(input, "delete")) {
+					sdfsFileName := s[1]
+					deleteFile(sdfsFileName)
+
+			} else if(string.HasPrefix(input, "ls")) {
+					sdfsFileName := s[1]
+					lsFile(sdfsFileName)
+
+			} else {
+			 fmt.Println("Incorrect input. Please try again.")
+			}
 		}
 	}
 }
