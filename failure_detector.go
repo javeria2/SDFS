@@ -581,6 +581,7 @@ func putFile(localFileName string, sdfsFileName string) {
 		fmt.Println(strconv.Itoa(vmID), strconv.Itoa(primaryMaster))
 		updateFileMap(sdfsFileName, vmID)
 	} else {
+		fmt.Println("HUHUSHAUHSAK")
 		// not main master, send msg to master and add files into filemap
 		sendSDFSMessage(primaryMaster, "add", sdfsFileName, vmID)
 	}
