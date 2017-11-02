@@ -545,6 +545,8 @@ func main() {
 
 	go listenMsg() // open new go routine to listen
 
+	go receiveSDFSMessage() //open new go routing to listen sdfs msgs over tcp
+
 	go handleUserInput()
 
 	// use timer to send heartbeat
@@ -619,7 +621,11 @@ func lsFile(sdfsFileName string) {
 
 }
 
+/**
+	Utility method to update current nodes filemap.
+*/
 func updateFileMap(sdfsFileName string, vmID int) {
+	//update the current nodes filemap
 	fileMap = make(map[string][]int)
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 1)
@@ -632,15 +638,32 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 		time.Sleep(time.Nanosecond)
 		return
 	}
+
+	//construct our msg
 	var constructString bytes.Buffer
-	b := make([]byte, 5)
 	constructString.WriteString(message)
 	constructString.WriteString(" ")
 	constructString.WriteString(sdfsFileName)
 	constructString.WriteString(" ")
 	constructString.WriteString(strconv.Itoa(vmID))
- 	fmt.Printf("%T\n", constructString.Bytes())
-	fmt.Printf("%T\n", b)
+	constructString.WriteString("\n")
+	msg := constructString.Bytes()
+
+	//Marshal the msg
+	// m, err := proto.Marshal(msg)
+	// if err != nil {
+	// 	fmt.Printf("error has occured! %s\n", err)
+	// 	return
+	// }
+
+	conn, err := net.Dial("tcp", fmt.Sprintf(nodeName, nodeID, port))
+	if err != nil {
+		fmt.Printf("error has occured! %s\n", err)
+		return
+	}
+	//defer close and write message to tcp connection
+	defer conn.Close()
+	conn.Write(msg)
 }
 
 func makeLocalReplicate(sdfsFileName string, localFileName string) {
@@ -652,7 +675,44 @@ func replicate(sdfsFileName string, nodeID int) {
 }
 
 func receiveSDFSMessage() {
+	//set up tcp listener
+	ln, err := net.Listen("tcp", port)
 
+	// accept connections on port
+  conn, _ := ln.Accept()
+
+	if err != nil {
+		fmt.Printf("error has occured! %s\n", err)
+		myLog.Fatal(err)
+	}
+	defer ln.Close()
+	defer conn.Close()
+
+	//buffer
+	// buf := make([]byte, 1200)
+	for {
+		if iHaveLeft {
+			// do not update anything if the node has left
+			time.Sleep(time.Nanosecond)
+			continue
+		}
+		// continue listenning
+		// n, addr, err := conn.ReadFrom(buf)
+		// if err != nil {
+		// 	fmt.Println("Error: ", err)
+		// 	myLog.Fatal(err)
+		// }
+		// var msg []byte
+		// if err := proto.Unmarshal(buf[0:n], msg); err != nil {
+		// 	fmt.Printf("Failed. Error: %s\n", err)
+		// 	myLog.Fatal(err)
+		// 	return
+		// }
+		// fmt.Println("n: ", n)
+		// fmt.Println(proto.MarshalTextString(msg))
+		message, _ := bufio.NewReader(conn).ReadString('\n')
+		fmt.Print("Message from server: "+message)
+	}
 }
 
 /**
