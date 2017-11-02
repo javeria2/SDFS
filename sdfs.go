@@ -183,7 +183,8 @@ func receiveSDFSMessage() {
 	}
 	defer conn.Close()
 
-	buf := make([]byte, 1200)
+  // make buffer large enough, it can contain files. Here we allow upto 300MB files.
+	buf := make([]byte, 3e8)
 	for {
 		if iHaveLeft {
 			// do not update anything if the node has left
@@ -218,7 +219,14 @@ func receiveSDFSMessage() {
 	Save file @file locally with name @sdfsFileName
 */
 func saveFile(sdfsFileName string, file []byte) {
-
+  // set permissions, allow r/w/e by everyone in this case
+  permission := 0777
+  //TODO: might have to decode file base64.StdEncoding.DecodeString
+  err := ioutil.WriteFile(sdfsFileName, file, os.FileMode(permission))
+  if err != nil {
+    fmt.Println("Error saving file locally (replication): ", err)
+    return
+  }
 }
 
 /**
