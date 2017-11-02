@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"io"
 	"bufio"
 	"strconv"
 	"strings"
@@ -584,8 +585,7 @@ func store() {
 */
 func putFile(localFileName string, sdfsFileName string) {
 	if vmID == primaryMaster {
-		fmt.Println(strconv.Itoa(vmID), strconv.Itoa(primaryMaster))
-		updateFileMap(sdfsFileName, vmID)
+		updateFileMap(sdfsFileName, uint32(vmID))
 	} else {
 		// not main master, send msg to master and add files into filemap
 		sendSDFSMessage(primaryMaster, "add", sdfsFileName, vmID)
@@ -628,11 +628,52 @@ func lsFile(sdfsFileName string) {
 /**
 	Utility method to update current nodes filemap.
 */
-func updateFileMap(sdfsFileName string, vmID int) {
+func updateFileMap(sdfsFileName string, vmID uint32) {
+	var firstPeer = vmID + 1
+	var secondPeer = vmID + 2
+	if secondPeer > 10 {
+		secondPeer = 1
+	}
+	if firstPeer > 10 {
+		firstPeer = 1
+		secondPeer = 2
+	}
 	//update the current nodes filemap
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], uint32(vmID))
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], uint32(vmID + 1))
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], uint32(vmID + 2))
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], firstPeer)
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], secondPeer)
+}
+
+/**
+	Make local replica of file with name @sdfsFileName,@localFileName should already exist.
+	https://stackoverflow.com/questions/21060945/simple-way-to-copy-a-file-in-golang
+*/
+func makeLocalReplicate(sdfsFileName string, localFileName string) {
+	in, err := os.Open(localFileName)
+  if err != nil {
+		fmt.Println("Error: ", err)
+		myLog.Fatal(err)
+    return
+  }
+  defer in.Close()
+  out, err := os.Create(sdfsFileName)
+  if err != nil {
+		fmt.Println("Error: ", err)
+		myLog.Fatal(err)
+    return
+  }
+	defer out.Close()
+  if _, err = io.Copy(out, in); err != nil {
+		fmt.Println("Error: ", err)
+		myLog.Fatal(err)
+    return
+  }
+	//flush the file to stable storage
+  out.Sync()
+}
+
+func replicate(sdfsFileName string, nodeID int) {
+
 }
 
 /**
@@ -666,14 +707,6 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 	conn.Write(m)
 }
 
-func makeLocalReplicate(sdfsFileName string, localFileName string) {
-
-}
-
-func replicate(sdfsFileName string, nodeID int) {
-
-}
-
 /**
 	Receive an sdfs message packet.
 */
@@ -695,7 +728,7 @@ func receiveSDFSMessage() {
 		}
 
 		// continue listenning
-		n, _, err := conn.ReadFrom(buf)
+		n, addr, err := conn.ReadFrom(buf)
 		if err != nil {
 			fmt.Println("Error: ", err)
 			myLog.Fatal(err)
@@ -706,9 +739,12 @@ func receiveSDFSMessage() {
 			myLog.Fatal(err)
 			return
 		}
-
-		fmt.Println("n: ", n)
-		fmt.Println(proto.MarshalTextString(sdfsMsg))
+		// fmt.Println("n: ", n)
+		// fmt.Println(proto.MarshalTextString(sdfsMsg))
+		myLog.Printf("Message sent from node %d (IP: %s).\n", sdfsMsg.GetSource(), addr.String())
+		if sdfsMsg.GetMsg() == "add" {
+			updateFileMap(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetSource())
+		}
 	}
 }
 
@@ -716,10 +752,10 @@ func receiveSDFSMessage() {
 	Utility function to print file map of node with node id @VMid
 */
 func printFileMap() {
-	fmt.Println("SDFS File name                 VM ID")
+	fmt.Println("name id")
 	for k, v := range fileMap {
 		for _, idx := range v {
-			fmt.Printf("%s       %d\n", k, idx)
+			fmt.Printf("%s %d\n", k, idx)
 		}
 	}
 }
