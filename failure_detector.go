@@ -671,7 +671,7 @@ func replicate(sdfsFileName string, nodeID int) {
 
 func receiveSDFSMessage() {
 	//set up tcp listener
-	conn, err := net.ListenPacket("tcp", port)
+	conn, err := net.ListenPacket("tcp", "4040")
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
 		myLog.Fatal(err)
