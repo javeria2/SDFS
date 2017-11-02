@@ -1,7 +1,7 @@
 package main
 
 import (
-	"cs425_mp2/protocol-buffer"
+	"SDFS/protocol-buffer"
 	"encoding/binary"
 	"fmt"
 	"log"
