@@ -36,8 +36,8 @@ func putFile(localFileName string, sdfsFileName string) {
 		// not main master, send msg to master and add files into filemap
 		sendSDFSMessage(primaryMaster, "add", sdfsFileName, vmID, nil)
 	}
-	// makeLocalReplicate(sdfsFileName, localFileName)
-	// replicate(sdfsFileName, vmID)
+	makeLocalReplicate(sdfsFileName, localFileName)
+	replicate(sdfsFileName, vmID)
 }
 
 /**
