@@ -250,19 +250,19 @@ func handleUserInput() {
 		default:
 			s := strings.Split(input, " ")
 			if(strings.HasPrefix(input, "put")) {
-					localFileName, sdfsFileName := strings.TrimSpace(s[1]), strings.TrimSpace(s[2])
+					localFileName, sdfsFileName := s[1], s[2]
 					putFile(localFileName, sdfsFileName) //comes from sdfs.go
 
 			} else if(strings.HasPrefix(input, "get")) {
-					localFileName, sdfsFileName := strings.TrimSpace(s[2]), strings.TrimSpace(s[1])
+					localFileName, sdfsFileName := s[2], s[1]
 					getFile(localFileName, sdfsFileName) //comes from sdfs.go
 
 			} else if(strings.HasPrefix(input, "delete")) {
-					sdfsFileName := strings.TrimSpace(s[1])
+					sdfsFileName := s[1]
 					deleteFile(sdfsFileName) //comes from sdfs.go
 
 			} else if(strings.HasPrefix(input, "ls")) {
-					sdfsFileName := strings.TrimSpace(s[1])
+					sdfsFileName := s[1]
 					lsFile(sdfsFileName) //comes from sdfs.go
 
 			} else {
@@ -702,8 +702,6 @@ func receiveSDFSMessage() {
 			myLog.Fatal(err)
 			return
 		}
-		fmt.Println("n: ", n)
-		fmt.Println(proto.MarshalTextString(sdfsMsg))
 	}
 }
 
