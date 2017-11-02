@@ -655,7 +655,7 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 		return
 	}
 
-	conn, err := net.Dial("udp", fmt.Sprintf(nodeName, nodeID, port))
+	conn, err := net.Dial("udp", fmt.Sprintf(nodeName, nodeID, sdfsPort))
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
 		return
@@ -675,7 +675,7 @@ func replicate(sdfsFileName string, nodeID int) {
 
 func receiveSDFSMessage() {
 	//set up tcp listener
-	conn, err := net.ListenPacket("udp", port)
+	conn, err := net.ListenPacket("udp", sdfsPort)
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
 		myLog.Fatal(err)
