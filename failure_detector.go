@@ -633,7 +633,7 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 		return
 	}
 	var constructString bytes.Buffer
-	b []byte
+	b := make([]byte, 5)
 	constructString.WriteString(message)
 	constructString.WriteString(" ")
 	constructString.WriteString(sdfsFileName)
