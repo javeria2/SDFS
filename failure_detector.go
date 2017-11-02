@@ -559,13 +559,17 @@ func main() {
 /****************************************/
 /****************  SDFS  ****************/
 /****************************************/
-var (
-  fileMap         map[string][]uint32
-  isMaster        = false
+const (
 	primaryMaster   = 1
 	secondaryMaster = 2
 	thirdMaster     = 3
-	sdfsPacket      = &heartbeat.SdfsPacket{Source: uint32(vmID)}
+	sdfsPort        = 4040
+)
+
+var (
+	isMaster   = false
+  fileMap    map[string][]uint32
+	sdfsPacket = &heartbeat.SdfsPacket{Source: uint32(vmID)}
 )
 
 /**
@@ -651,7 +655,7 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 		return
 	}
 
-	conn, err := net.Dial("tcp", fmt.Sprintf(nodeName, nodeID, port))
+	conn, err := net.Dial("udp", fmt.Sprintf(nodeName, nodeID, port))
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
 		return
@@ -671,7 +675,7 @@ func replicate(sdfsFileName string, nodeID int) {
 
 func receiveSDFSMessage() {
 	//set up tcp listener
-	conn, err := net.ListenPacket("tcp", ":4040")
+	conn, err := net.ListenPacket("udp", port)
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
 		myLog.Fatal(err)
