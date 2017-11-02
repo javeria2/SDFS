@@ -568,7 +568,7 @@ const (
 
 var (
 	isMaster   = false
-  fileMap    map[string][]uint32
+  fileMap    = make(map[string][]uint32)
 	sdfsPacket = &heartbeat.SdfsPacket{Source: uint32(vmID)}
 )
 
@@ -583,8 +583,6 @@ func store() {
  File op: PUT, put a local file with filename @localFileName into sdfs with file name @sdfsFileName
 */
 func putFile(localFileName string, sdfsFileName string) {
-	fileMap = make(map[string][]uint32)
-
 	if vmID == primaryMaster {
 		fmt.Println(strconv.Itoa(vmID), strconv.Itoa(primaryMaster))
 		updateFileMap(sdfsFileName, vmID)
@@ -637,6 +635,9 @@ func updateFileMap(sdfsFileName string, vmID int) {
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], uint32(vmID + 2))
 }
 
+/**
+	Send an sdfs message packet to node with id @nodeID
+*/
 func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) {
 	if iHaveLeft {
 		// Do nothing if the node has left
@@ -673,6 +674,9 @@ func replicate(sdfsFileName string, nodeID int) {
 
 }
 
+/**
+	Receive an sdfs message packet.
+*/
 func receiveSDFSMessage() {
 	//set up tcp listener
 	conn, err := net.ListenPacket("udp", sdfsPort)
