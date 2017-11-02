@@ -628,19 +628,17 @@ func updateFileMap(sdfsFileName string, vmID int) {
 
 func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) {
 	if iHaveLeft {
-		fmt.Println("came here...")
 		// Do nothing if the node has left
 		time.Sleep(time.Nanosecond)
 		return
 	}
-	fmt.Println("then here...")
 	var constructString bytes.Buffer
 	constructString.WriteString(message)
 	constructString.WriteString(" ")
 	constructString.WriteString(sdfsFileName)
 	constructString.WriteString(" ")
 	constructString.WriteString(strconv.Itoa(vmID))
- 	fmt.Printf("%T\n", constructString.Bytes())
+ 	fmt.Printf("%T\n", constructString.String())
 }
 
 func makeLocalReplicate(sdfsFileName string, localFileName string) {
