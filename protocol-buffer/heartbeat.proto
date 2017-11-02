@@ -18,9 +18,8 @@ message Member {
     uint32 id = 1;
     uint64 heartbeat_count = 2;
     Status status = 3;
-    map<string, uint32> filemap = 4;
-    uint32 ip_addr = 5;
-    google.protobuf.Timestamp last_join = 6;
+    uint32 ip_addr = 4;
+    google.protobuf.Timestamp last_join = 5;
 }
 
 message MembershipList {

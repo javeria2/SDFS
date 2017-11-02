@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SDFS/protocol-buffer"
+	"cs425_mp2/protocol-buffer"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
+	"bytes"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	gtimestamp "github.com/golang/protobuf/ptypes/timestamp"
@@ -227,7 +227,8 @@ func nodeLeave() {
 
 func handleUserInput() {
 	for {
-		fmt.Println("Please enter \"list\", \"neighbor\", \"id\", \"join\", \"leave\", \"put\", \"get\", \"delete\", \"store\" or \"ls\":")
+		fmt.Println("Please enter FD commands: \"list\", \"neighbor\", \"id\", \"join\", \"leave\"")
+		fmt.Println("Or enter SDFS commands: \"filemap\", \"put\", \"get\", \"delete\", \"store\", \"ls\":")
 		var input string
 		fmt.Scanln(&input)
 		switch input {
@@ -243,6 +244,8 @@ func handleUserInput() {
 			nodeLeave()
 		case "store":
 			store() //comes from sdfs.go
+		case "filemap":
+			printFileMap() //comes from sdfs.go
 		default:
 			s := strings.Split(input, " ")
 			if(strings.HasPrefix(input, "put")) {
@@ -460,6 +463,11 @@ func tempTest() {
 }
 
 func initialize() {
+	/* sdfs */
+	if vmID == primaryMaster || vmID == secondaryMaster || vmID == thirdMaster {
+	    isMaster = true
+	}
+
 	// Initialize membership list
 	myHeartbeat = 0
 	membershipList = make([]*member, listLength, listLength)
@@ -542,5 +550,111 @@ func main() {
 	for _ = range ticker.C {
 		sendMsg()
 	}
+}
 
+
+/****************************************/
+/****************  SDFS  ****************/
+/****************************************/
+
+var (
+  fileMap  map[string][]int
+  isMaster = false
+	primaryMaster = 1
+	secondaryMaster = 2
+	thirdMaster = 3
+)
+
+/**
+  File op: STORE, Prints the files on the current node.
+*/
+func store() {
+
+}
+
+/**
+ File op: PUT, put a local file with filename @localFileName into sdfs with file name @sdfsFileName
+*/
+func putFile(localFileName string, sdfsFileName string) {
+	if vmID == primaryMaster {
+		fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
+		fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 1)
+		fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 2)
+	} else {
+		// not main master, send msg to master and add files into filemap
+		sendSDFSMessage(primaryMaster, "add", sdfsFileName, vmID)
+	}
+	var firstPeer = vmID + 1
+	var secondPeer = vmID + 2
+	if secondPeer > 10 {
+		secondPeer = 1
+	}
+	if firstPeer > 10 {
+		firstPeer = 1
+		secondPeer = 2
+	}
+	makeLocalReplicate(sdfsFileName, localFileName)
+	replicate(sdfsFileName, firstPeer)
+	replicate(sdfsFileName, secondPeer)
+}
+
+/**
+ File op: GET
+*/
+func getFile(localFileName string, sdfsFileName string) {
+
+}
+
+/**
+ File op: DELETE
+*/
+func deleteFile(sdfsFileName string) {
+
+}
+
+/**
+ File op: LSFILE
+*/
+func lsFile(sdfsFileName string) {
+
+}
+
+func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) {
+	if iHaveLeft {
+		// Do nothing if the node has left
+		time.Sleep(time.Nanosecond)
+		return
+	}
+
+	var constructString bytes.Buffer
+	constructString.WriteString(message)
+	constructString.WriteString(" ")
+	constructString.WriteString(sdfsFileName)
+	constructString.WriteString(" ")
+	constructString.WriteString(strconv.Itoa(vmID))
+ 	fmt.Printf("%T\n", constructString.Bytes())
+}
+
+func makeLocalReplicate(sdfsFileName string, localFileName string) {
+
+}
+
+func replicate(sdfsFileName string, nodeID int) {
+
+}
+
+func receiveSDFSMessage() {
+
+}
+
+/**
+	Utility function to print file map of node with node id @VMid
+*/
+func printFileMap() {
+	fmt.Println("SDFS File name                 VM ID")
+	for k, v := range fileMap {
+		for _, idx := range v {
+			fmt.Println(k, strconv.Itoa(idx))
+		}
+	}
 }
