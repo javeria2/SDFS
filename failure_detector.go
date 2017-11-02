@@ -230,7 +230,7 @@ func handleUserInput() {
 		fmt.Println("Please enter FD commands: \"list\", \"neighbor\", \"id\", \"join\", \"leave\"")
 		fmt.Println("Or enter SDFS commands: \"filemap\", \"put\", \"get\", \"delete\", \"store\", \"ls\":")
 		var input string
-		fmt.Scanf("%q", &input)
+		fmt.Scanln(&input)
 		switch input {
 		case "list":
 			printMembershipList()
@@ -246,6 +246,10 @@ func handleUserInput() {
 			store() //comes from sdfs.go
 		case "filemap":
 			printFileMap() //comes from sdfs.go
+		case "put":
+			var s string
+			fmt.Scanln(&s)
+			fmt.Println(s)
 		default:
 			s := strings.Split(input, " ")
 			fmt.Println(input)
