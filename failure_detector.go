@@ -563,7 +563,7 @@ const (
 	primaryMaster   = 1
 	secondaryMaster = 2
 	thirdMaster     = 3
-	sdfsPort        = 4040
+	sdfsPort        = ":4040"
 )
 
 var (
