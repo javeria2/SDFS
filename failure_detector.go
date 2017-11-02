@@ -702,7 +702,8 @@ func receiveSDFSMessage() {
 			myLog.Fatal(err)
 			return
 		}
-
+		fmt.Println("n: ", n)
+		fmt.Println(proto.MarshalTextString(sdfsMsg))
 	}
 }
 
