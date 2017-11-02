@@ -32,4 +32,5 @@ message SdfsPacket {
     string msg = 2;
     string sdfs_file_name = 3;
     map<string, uint32> file_map = 4;
+    bytes file = 5;
 }
