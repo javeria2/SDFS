@@ -560,7 +560,6 @@ func main() {
 /****************************************/
 /****************  SDFS  ****************/
 /****************************************/
-
 var (
   fileMap  map[string][]int
   isMaster = false
@@ -580,7 +579,7 @@ func store() {
  File op: PUT, put a local file with filename @localFileName into sdfs with file name @sdfsFileName
 */
 func putFile(localFileName string, sdfsFileName string) {
-
+	fileMap = make(map[string][]int)
 	if vmID == primaryMaster {
 		updateFileMap(sdfsFileName, vmID)
 	} else {
@@ -623,9 +622,9 @@ func lsFile(sdfsFileName string) {
 }
 
 func updateFileMap(sdfsFileName string, vmID int) {
-	if fileMap[sdfsFileName] == nil {
-    fileMap[sdfsFileName] = []int{}
-	}
+	// if fileMap[sdfsFileName] == nil {
+  //   fileMap[sdfsFileName] = []int{}
+	// }
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 1)
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 2)
