@@ -23,6 +23,7 @@ const (
 
 var (
   fileMap    = make(map[string][]uint32)
+  currStored []string
 	sdfsPacket = &heartbeat.SdfsPacket{Source: uint32(vmID)}
 )
 
@@ -44,7 +45,10 @@ func putFile(localFileName string, sdfsFileName string) {
   File op: STORE, Prints the files on the current node.
 */
 func store() {
-
+  fmt.Printf("Files currently being stored on node %d are: \n", vmID)
+  for _, val := range currStored {
+    fmt.Println(val)
+  }
 }
 
 /**
@@ -113,6 +117,7 @@ func makeLocalReplicate(sdfsFileName string, localFileName string) {
   }
 	//flush the file to stable storage
   out.Sync()
+  currStored = append(currStored, sdfsFileName)
 }
 
 /**
@@ -227,6 +232,7 @@ func saveFile(sdfsFileName string, file []byte) {
     fmt.Println("Error saving file locally (replication): ", err)
     return
   }
+  currStored = append(currStored, sdfsFileName)
 }
 
 /**
