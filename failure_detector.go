@@ -578,6 +578,7 @@ func store() {
 */
 func putFile(localFileName string, sdfsFileName string) {
 	if vmID == primaryMaster {
+		fmt.Println(strconv.Itoa(vmID), strconv.Itoa(primaryMaster))
 		updateFileMap(sdfsFileName, vmID)
 	} else {
 		// not main master, send msg to master and add files into filemap
@@ -638,7 +639,6 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 	constructString.WriteString(sdfsFileName)
 	constructString.WriteString(" ")
 	constructString.WriteString(strconv.Itoa(vmID))
-	fmt.Println("HIHIHIHIHI")
  	fmt.Printf("%T\n", constructString.Bytes())
 }
 
