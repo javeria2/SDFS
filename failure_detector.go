@@ -233,7 +233,6 @@ func handleUserInput() {
 		// var input string
 		scanner := bufio.NewReader(os.Stdin)
 		input, _ := scanner.ReadString('\n')
-		// fmt.Scanln(&input)
 		switch input {
 		case "list\n":
 			printMembershipList()
@@ -250,7 +249,6 @@ func handleUserInput() {
 		case "filemap\n":
 			printFileMap() //comes from sdfs.go
 		default:
-			fmt.Println(input)
 			s := strings.Split(input, " ")
 			if(strings.HasPrefix(input, "put")) {
 					localFileName, sdfsFileName := s[1], s[2]
