@@ -248,6 +248,8 @@ func handleUserInput() {
 			printFileMap() //comes from sdfs.go
 		default:
 			s := strings.Split(input, " ")
+			fmt.Println(input)
+			fmt.Println(s)
 			if(strings.HasPrefix(input, "put")) {
 					localFileName, sdfsFileName := s[1], s[2]
 					putFile(localFileName, sdfsFileName) //comes from sdfs.go
