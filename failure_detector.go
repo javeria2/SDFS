@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SDFS/protocol-buffer"
+	"cs425_mp2/protocol-buffer"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -580,10 +580,9 @@ func store() {
  File op: PUT, put a local file with filename @localFileName into sdfs with file name @sdfsFileName
 */
 func putFile(localFileName string, sdfsFileName string) {
+
 	if vmID == primaryMaster {
-		fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
-		fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 1)
-		fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 2)
+		updateFileMap(sdfsFileName, vmID)
 	} else {
 		// not main master, send msg to master and add files into filemap
 		sendSDFSMessage(primaryMaster, "add", sdfsFileName, vmID)
@@ -621,6 +620,15 @@ func deleteFile(sdfsFileName string) {
 */
 func lsFile(sdfsFileName string) {
 
+}
+
+func updateFileMap(sdfsFileName string, vmID int) {
+	if fileMap[sdfsFileName] == nil {
+    fileMap[sdfsFileName] = []int{}
+	}
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 1)
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 2)
 }
 
 func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) {
