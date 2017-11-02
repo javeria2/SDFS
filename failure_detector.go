@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"bytes"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	gtimestamp "github.com/golang/protobuf/ptypes/timestamp"
@@ -561,11 +560,12 @@ func main() {
 /****************  SDFS  ****************/
 /****************************************/
 var (
-  fileMap  map[string][]int
-  isMaster = false
-	primaryMaster = 1
+  fileMap         map[string][]uint32
+  isMaster        = false
+	primaryMaster   = 1
 	secondaryMaster = 2
-	thirdMaster = 3
+	thirdMaster     = 3
+	sdfsPacket      = &heartbeat.SdfsPacket{Source: uint32(vmID)}
 )
 
 /**
@@ -579,6 +579,8 @@ func store() {
  File op: PUT, put a local file with filename @localFileName into sdfs with file name @sdfsFileName
 */
 func putFile(localFileName string, sdfsFileName string) {
+	fileMap = make(map[string][]uint32)
+
 	if vmID == primaryMaster {
 		fmt.Println(strconv.Itoa(vmID), strconv.Itoa(primaryMaster))
 		updateFileMap(sdfsFileName, vmID)
@@ -626,10 +628,9 @@ func lsFile(sdfsFileName string) {
 */
 func updateFileMap(sdfsFileName string, vmID int) {
 	//update the current nodes filemap
-	fileMap = make(map[string][]int)
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 1)
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 2)
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], uint32(vmID))
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], uint32(vmID + 1))
+	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], uint32(vmID + 2))
 }
 
 func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) {
@@ -639,22 +640,16 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 		return
 	}
 
-	//construct our msg
-	var constructString bytes.Buffer
-	constructString.WriteString(message)
-	constructString.WriteString(" ")
-	constructString.WriteString(sdfsFileName)
-	constructString.WriteString(" ")
-	constructString.WriteString(strconv.Itoa(vmID))
-	constructString.WriteString("\n")
-	msg := constructString.Bytes()
+	// construct our msg
+	sdfsPacket.Msg = message
+	sdfsPacket.SdfsFileName = sdfsFileName
 
 	//Marshal the msg
-	// m, err := proto.Marshal(msg)
-	// if err != nil {
-	// 	fmt.Printf("error has occured! %s\n", err)
-	// 	return
-	// }
+	m, err := proto.Marshal(sdfsPacket)
+	if err != nil {
+		fmt.Printf("error has occured! %s\n", err)
+		return
+	}
 
 	conn, err := net.Dial("tcp", fmt.Sprintf(nodeName, nodeID, port))
 	if err != nil {
@@ -663,7 +658,7 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 	}
 	//defer close and write message to tcp connection
 	defer conn.Close()
-	conn.Write(msg)
+	conn.Write(m)
 }
 
 func makeLocalReplicate(sdfsFileName string, localFileName string) {
@@ -676,42 +671,35 @@ func replicate(sdfsFileName string, nodeID int) {
 
 func receiveSDFSMessage() {
 	//set up tcp listener
-	ln, err := net.Listen("tcp", port)
-
-	// accept connections on port
-  conn, _ := ln.Accept()
-
+	conn, err := net.ListenPacket("tcp", port)
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
 		myLog.Fatal(err)
 	}
-	defer ln.Close()
 	defer conn.Close()
 
-	//buffer
-	// buf := make([]byte, 1200)
+	buf := make([]byte, 1200)
 	for {
 		if iHaveLeft {
 			// do not update anything if the node has left
 			time.Sleep(time.Nanosecond)
 			continue
 		}
+
 		// continue listenning
-		// n, addr, err := conn.ReadFrom(buf)
-		// if err != nil {
-		// 	fmt.Println("Error: ", err)
-		// 	myLog.Fatal(err)
-		// }
-		// var msg []byte
-		// if err := proto.Unmarshal(buf[0:n], msg); err != nil {
-		// 	fmt.Printf("Failed. Error: %s\n", err)
-		// 	myLog.Fatal(err)
-		// 	return
-		// }
-		// fmt.Println("n: ", n)
-		// fmt.Println(proto.MarshalTextString(msg))
-		message, _ := bufio.NewReader(conn).ReadString('\n')
-		fmt.Print("Message from server: "+message)
+		n, _, err := conn.ReadFrom(buf)
+		if err != nil {
+			fmt.Println("Error: ", err)
+			myLog.Fatal(err)
+		}
+		sdfsMsg := &heartbeat.SdfsPacket{}
+		if err := proto.Unmarshal(buf[0:n], sdfsMsg); err != nil {
+			fmt.Printf("Failed. Error: %s\n", err)
+			myLog.Fatal(err)
+			return
+		}
+		fmt.Println("n: ", n)
+		fmt.Println(proto.MarshalTextString(sdfsMsg))
 	}
 }
 
@@ -722,7 +710,7 @@ func printFileMap() {
 	fmt.Println("SDFS File name                 VM ID")
 	for k, v := range fileMap {
 		for _, idx := range v {
-			fmt.Printf("%s       %s\n", k, strconv.Itoa(idx))
+			fmt.Printf("%s       %d\n", k, idx)
 		}
 	}
 }
