@@ -633,12 +633,14 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 		return
 	}
 	var constructString bytes.Buffer
+	b []byte
 	constructString.WriteString(message)
 	constructString.WriteString(" ")
 	constructString.WriteString(sdfsFileName)
 	constructString.WriteString(" ")
 	constructString.WriteString(strconv.Itoa(vmID))
- 	fmt.Printf("%T\n", constructString.String())
+ 	fmt.Printf("%T\n", constructString.Bytes())
+	fmt.Printf("%T\n", b)
 }
 
 func makeLocalReplicate(sdfsFileName string, localFileName string) {
