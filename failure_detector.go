@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SDFS/protocol-buffer"
+	"cs425_mp2/protocol-buffer"
 	"encoding/binary"
 	"fmt"
 	"log"
@@ -230,7 +230,7 @@ func handleUserInput() {
 		fmt.Println("Please enter FD commands: \"list\", \"neighbor\", \"id\", \"join\", \"leave\"")
 		fmt.Println("Or enter SDFS commands: \"filemap\", \"put\", \"get\", \"delete\", \"store\", \"ls\":")
 		var input string
-		fmt.Scanln(&input)
+		fmt.Scanf("%q", &input)
 		switch input {
 		case "list":
 			printMembershipList()
