@@ -1,12 +1,13 @@
 package main
 
 import (
-	"SDFS/protocol-buffer"
+	"cs425_mp2/protocol-buffer"
 	"encoding/binary"
 	"fmt"
 	"log"
 	"net"
 	"os"
+	"bufio"
 	"strconv"
 	"strings"
 	"time"
@@ -229,8 +230,10 @@ func handleUserInput() {
 	for {
 		fmt.Println("Please enter FD commands: \"list\", \"neighbor\", \"id\", \"join\", \"leave\"")
 		fmt.Println("Or enter SDFS commands: \"filemap\", \"put\", \"get\", \"delete\", \"store\", \"ls\":")
-		var input string
-		fmt.Scanln(&input)
+		// var input string
+		scanner := bufio.NewReader(os.Stdin)
+		input, _ := scanner.ReadString('\n')
+		// fmt.Scanln(&input)
 		switch input {
 		case "list":
 			printMembershipList()
@@ -246,14 +249,8 @@ func handleUserInput() {
 			store() //comes from sdfs.go
 		case "filemap":
 			printFileMap() //comes from sdfs.go
-		case "put":
-			var s string
-			fmt.Scanln(&s)
-			fmt.Println(s)
 		default:
 			s := strings.Split(input, " ")
-			fmt.Println(input)
-			fmt.Println(s)
 			if(strings.HasPrefix(input, "put")) {
 					localFileName, sdfsFileName := s[1], s[2]
 					putFile(localFileName, sdfsFileName) //comes from sdfs.go
