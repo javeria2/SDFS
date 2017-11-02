@@ -579,7 +579,6 @@ func store() {
  File op: PUT, put a local file with filename @localFileName into sdfs with file name @sdfsFileName
 */
 func putFile(localFileName string, sdfsFileName string) {
-	fileMap = make(map[string][]int)
 	if vmID == primaryMaster {
 		updateFileMap(sdfsFileName, vmID)
 	} else {
@@ -622,9 +621,7 @@ func lsFile(sdfsFileName string) {
 }
 
 func updateFileMap(sdfsFileName string, vmID int) {
-	// if fileMap[sdfsFileName] == nil {
-  //   fileMap[sdfsFileName] = []int{}
-	// }
+	fileMap = make(map[string][]int)
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 1)
 	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID + 2)
@@ -665,7 +662,7 @@ func printFileMap() {
 	fmt.Println("SDFS File name                 VM ID")
 	for k, v := range fileMap {
 		for _, idx := range v {
-			fmt.Println(k, strconv.Itoa(idx))
+			fmt.Printf("%s       %s\n", k, strconv.Itoa(idx))
 		}
 	}
 }
