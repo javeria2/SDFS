@@ -233,24 +233,24 @@ func handleUserInput() {
 		// var input string
 		scanner := bufio.NewReader(os.Stdin)
 		input, _ := scanner.ReadString('\n')
-		fmt.Println(input)
 		// fmt.Scanln(&input)
 		switch input {
 		case "list\n":
 			printMembershipList()
-		case "neighbor":
+		case "neighbor\n":
 			printNeighborList()
-		case "id":
+		case "id\n":
 			printSelfID()
-		case "join":
+		case "join\n":
 			nodeJoin()
-		case "leave":
+		case "leave\n":
 			nodeLeave()
-		case "store":
+		case "store\n":
 			store() //comes from sdfs.go
-		case "filemap":
+		case "filemap\n":
 			printFileMap() //comes from sdfs.go
 		default:
+			fmt.Println(input)
 			s := strings.Split(input, " ")
 			if(strings.HasPrefix(input, "put")) {
 					localFileName, sdfsFileName := s[1], s[2]
