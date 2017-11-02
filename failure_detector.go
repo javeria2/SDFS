@@ -233,6 +233,7 @@ func handleUserInput() {
 		// var input string
 		scanner := bufio.NewReader(os.Stdin)
 		input, _ := scanner.ReadString('\n')
+		fmt.Println(input)
 		// fmt.Scanln(&input)
 		switch input {
 		case "list":
