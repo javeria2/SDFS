@@ -236,7 +236,7 @@ func handleUserInput() {
 		fmt.Println(input)
 		// fmt.Scanln(&input)
 		switch input {
-		case "list":
+		case "list\n":
 			printMembershipList()
 		case "neighbor":
 			printNeighborList()
