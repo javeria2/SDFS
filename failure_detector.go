@@ -638,6 +638,7 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, vmID int) 
 	constructString.WriteString(sdfsFileName)
 	constructString.WriteString(" ")
 	constructString.WriteString(strconv.Itoa(vmID))
+	fmt.Println("HIHIHIHIHI")
  	fmt.Printf("%T\n", constructString.Bytes())
 }
 
