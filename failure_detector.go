@@ -227,8 +227,8 @@ func nodeLeave() {
 
 func handleUserInput() {
 	for {
-		fmt.Println("Please enter FD commands: \"list\", \"neighbor\", \"id\", \"join\", \"leave\"")
-		fmt.Println("Or enter SDFS commands: \"filemap\", \"put\", \"get\", \"delete\", \"store\", \"ls\":")
+		fmt.Println("Please enter FD commands: \n\"1) list\"\n \"2) neighbor\"\n \"3) id\"\n \"4) join\"\n \"5) leave\"")
+		fmt.Println("Or enter SDFS commands: \n\"1) filemap\"\n \"2) isMaster\"\n \"3) put\"\n \"4) get\"\n \"5) delete\"\n \"6) store\"\n \"7) ls\"\n>")
 		// var input string
 		scanner := bufio.NewReader(os.Stdin)
 		input, _ := scanner.ReadString('\n')
@@ -247,6 +247,8 @@ func handleUserInput() {
 			store() //comes from sdfs.go
 		case "filemap\n":
 			printFileMap() //comes from sdfs.go
+		case "isMaster\n":
+			isMaster() //comes from sdfs.go
 		default:
 			s := strings.Split(input, " ")
 			if(strings.HasPrefix(input, "put")) {
