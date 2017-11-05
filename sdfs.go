@@ -128,7 +128,7 @@ func deleteFile(sdfsFileName string) {
   Method to simply delete file locally and remove entry from filemap.
 */
 func deleteHelper(sdfsFileName string) {
-  var err = os.Remove("/files/" + sdfsFileName)
+  var err = os.Remove("files/" + sdfsFileName)
   if err != nil {
     fmt.Println("Error (deleting): ", err.Error())
     return
@@ -214,14 +214,14 @@ func updateFileMap(sdfsFileName string, vmID uint32) {
 	https://stackoverflow.com/questions/21060945/simple-way-to-copy-a-file-in-golang
 */
 func makeLocalReplicate(sdfsFileName string, localFileName string) {
-	in, err := os.Open("/files/" + localFileName)
+	in, err := os.Open("files/" + localFileName)
   if err != nil {
 		fmt.Println("Error (while opening during local replication): ", err)
 		myLog.Fatal(err)
     return
   }
   defer in.Close()
-  out, err := os.Create("/files/" + sdfsFileName)
+  out, err := os.Create("files/" + sdfsFileName)
   if err != nil {
 		fmt.Println("Error (while creating local replication): ", err)
 		myLog.Fatal(err)
@@ -390,7 +390,7 @@ func saveFile(sdfsFileName string, file []byte) {
   // set permissions, allow r/w/e by everyone in this case
   permission := 0777
   //TODO: might have to decode file base64.StdEncoding.DecodeString
-  err := ioutil.WriteFile("/files/" + sdfsFileName, file, os.FileMode(permission))
+  err := ioutil.WriteFile("files/" + sdfsFileName, file, os.FileMode(permission))
   if err != nil {
     fmt.Println("Error (while saving file): ", err)
     return
