@@ -370,10 +370,6 @@ func updateMembershipLists(newHeartbeat *heartbeat.MembershipList) {
 					if neighborID == primaryMaster { //comes from sdfs.go
 						masterElection()
 					}
-					// on the primary master, update the file map if the crashed node exist as a value
-					if vmID == primaryMaster {
-						removeNodeFromFileMaps(uint32(neighborID))
-					}
 					myLog.Printf("Node %d crashed (by detection).\n", neighborID)
 				}
 			}
@@ -571,9 +567,9 @@ func main() {
 	// use timer to send heartbeat
 	ticker = time.NewTicker(650 * time.Millisecond) // send every ? seconds
 	for _ = range ticker.C {
-		//if vmID == primaryMaster { //comes from sdfs.go
-			//updatePrimaryFileMap()
-		//}
+		if vmID == primaryMaster { //comes from sdfs.go
+			updatePrimaryFileMap()
+		}
 		sendMsg()
 	}
 }
