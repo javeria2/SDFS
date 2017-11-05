@@ -46,13 +46,14 @@ func putFile(localFileName string, sdfsFileName string) {
     oneMinute := int(time.Minute)
     elapsed := int(time.Now().Sub(upTime))
     if elapsed <= oneMinute {
+      L:
       for {
         fmt.Println("Are you sure you want to proceed with the update? (Yes/No): ")
         var input string
         fmt.Scanln(&input)
         switch input {
         case "Yes":
-          break
+          break L
         case "No":
           return
         default:
