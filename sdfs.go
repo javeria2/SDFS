@@ -12,6 +12,7 @@ import (
 )
 //TODO: handle ctrl+C and send filemap back, OR line 353, update filemap accordingly (remove stuff).
 //whenever a node joins, look into files folder and delete everything.
+//update replicas by looking into the membership list
 /****************************************/
 /****************  SDFS  ****************/
 /****************************************/
@@ -98,13 +99,13 @@ func updateFileMap(sdfsFileName string, vmID uint32) {
 		secondPeer = 2
 	}
 	//update the current nodes filemap
-  var node_ids *heartbeat.MapValues /* used for filemap value */
+  var node_ids heartbeat.MapValues /* used for filemap value */
   var vals []uint32
   vals = append(vals, vmID)
   vals = append(vals, firstPeer)
   vals = append(vals, secondPeer)
   node_ids.Values = vals
-	fileMap[sdfsFileName] = node_ids
+	fileMap[sdfsFileName] = &node_ids
 }
 
 /**
