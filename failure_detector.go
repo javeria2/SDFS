@@ -95,6 +95,8 @@ func sendMsg() {
 	// Marshal membership list and send
 	allMembership.Members = membershipList
 	allMembership.FileMap = fileMap //comes from sdfs.go
+	allMembership.UpdateMap = updateMap //comes from sdfs.go
+	
 	hb, err := proto.Marshal(allMembership) // to binary
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
@@ -281,8 +283,13 @@ func handleUserInput() {
 func updateMembershipLists(newHeartbeat *heartbeat.MembershipList) {
 	newList := newHeartbeat.Members
 	if newHeartbeat.Source != uint32(myID) {
-		if newHeartbeat.GetFileMap() != nil {
-			fileMap = newHeartbeat.GetFileMap() //comes from sdfs.go
+		if vmID != primaryMaster { //comes from sdfs.go
+			if newHeartbeat.GetFileMap() != nil {
+				fileMap = newHeartbeat.GetFileMap()
+			}
+			if newHeartbeat.GetUpdateMap() != nil {
+				updateMap = newHeartbeat.GetUpdateMap()
+			}
 		}
 
 		if (membershipList[introducerID].GetStatus() != alive) && (membershipList[introducerID].GetStatus() != start) && (newHeartbeat.Source == introducerID) {

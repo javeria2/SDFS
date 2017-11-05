@@ -30,6 +30,7 @@ message MembershipList {
     uint32 source = 1;
     repeated Member members = 2;
     map<string, MapValues> file_map = 3;
+    map<string, google.protobuf.Timestamp> update_map = 4;
 }
 
 message SdfsPacket {

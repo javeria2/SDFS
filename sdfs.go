@@ -9,10 +9,14 @@ import (
   "net"
   "time"
   "github.com/golang/protobuf/proto"
+  "github.com/golang/protobuf/ptypes"
+  google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 )
-//TODO: handle ctrl+C and send filemap back, OR line 353, update filemap accordingly (remove stuff).
-//whenever a node joins, look into files folder and delete everything.
-//update replicas by looking into the membership list
+//TODO: 1) handle ctrl+C and send filemap back, OR line 353, update filemap accordingly (remove stuff).
+//Shiming already does that, check line 672 in backup.go
+//2) whenever a node joins, look into files folder and delete everything.
+//3) dynamic update of replicas by looking into the membership list
+//4) write prompt within 1 minute
 /****************************************/
 /****************  SDFS  ****************/
 /****************************************/
@@ -25,22 +29,48 @@ var (
   secondaryMaster = 2
   thirdMaster     = 3
   fileMap         = make(map[string]*heartbeat.MapValues)
+  updateMap       = make(map[string]*google_protobuf.Timestamp)
   currStored      []string
 	sdfsPacket      = &heartbeat.SdfsPacket{Source: uint32(vmID)}
+  localFile       string
 )
 
 /**
  File op: PUT, put a local file with filename @localFileName into sdfs with file name @sdfsFileName
 */
 func putFile(localFileName string, sdfsFileName string) {
+  // check if update is being made within 1 minute
+  _, exist := updateMap[sdfsFileName]
+  if exist {
+    upTime := convertTime(updateMap[sdfsFileName])
+    oneMinute := int(time.Minute)
+    elapsed := int(time.Now().Sub(upTime))
+    if elapsed <= oneMinute {
+      for {
+        fmt.Println("Are you sure you want to proceed with the update? (Yes/No): ")
+        var input string
+        fmt.Scanln(&input)
+        switch input {
+        case "Yes":
+          break
+        case "No":
+          return
+        default:
+          fmt.Println("Incorrect input. Please try again.")
+        }
+      }
+    }
+  }
+
 	if vmID == primaryMaster {
 		updateFileMap(sdfsFileName, uint32(vmID))
 	} else {
 		// not main master, send msg to master and add files into filemap
 		sendSDFSMessage(primaryMaster, "add", sdfsFileName, nil)
 	}
-	// makeLocalReplicate(sdfsFileName, localFileName)
-	// replicate(sdfsFileName, vmID)
+
+	makeLocalReplicate(sdfsFileName, localFileName)
+	replicate(sdfsFileName, vmID)
 }
 
 /**
@@ -57,14 +87,64 @@ func store() {
  File op: GET
 */
 func getFile(localFileName string, sdfsFileName string) {
-
+  vals := searchFileMap(sdfsFileName)
+  if vals == nil {
+    fmt.Printf("Trying to GET on a file %s which doesn't exist.\n", sdfsFileName)
+  } else {
+    //choose first node to get the file from
+    chosenIdx := vals[0]
+    localFile = localFileName
+    //send msg to retrieve file
+    sendSDFSMessage(int(chosenIdx), "retrieve", sdfsFileName, nil)
+  }
 }
 
 /**
  File op: DELETE
 */
 func deleteFile(sdfsFileName string) {
+  var firstPeer = vmID + 1
+  var secondPeer = vmID + 2
+  if secondPeer > 10 {
+    secondPeer = 1
+  }
+  if firstPeer > 10 {
+    firstPeer = 1
+    secondPeer = 2
+  }
+  // tell replicas to delete the file
+  sendSDFSMessage(firstPeer, "delete", sdfsFileName, nil)
+  sendSDFSMessage(secondPeer, "delete", sdfsFileName, nil)
 
+  //delete on self
+  deleteHelper(sdfsFileName)
+
+  // tell the primary node to update its filemap too
+  sendSDFSMessage(primaryMaster, "deletePrimary", sdfsFileName, nil)
+  fmt.Printf("%s successfully deleted!\n", sdfsFileName)
+}
+
+/**
+  Method to simply delete file locally and remove entry from filemap.
+*/
+func deleteHelper(sdfsFileName string) {
+  var err = os.Remove("/files/" + sdfsFileName)
+  if err != nil {
+    fmt.Println("Error (deleting): ", err.Error())
+    return
+  }
+
+  //first delete from fileMap
+  _, exist := fileMap[sdfsFileName]
+  if exist {
+    delete(fileMap, sdfsFileName)
+  }
+
+  //now delete from updateMap
+  _, exist_ := updateMap[sdfsFileName]
+  if exist_ {
+    delete(updateMap, sdfsFileName)
+  }
 }
 
 /**
@@ -74,15 +154,27 @@ func lsFile(sdfsFileName string) {
   //simply echo back the request to the primary node
   // sendSDFSMessage(primaryMaster, "ls", sdfsFileName, nil)
   fmt.Printf("%s is present on VMs with VM ids: ", sdfsFileName)
+  vals := searchFileMap(sdfsFileName)
+  if vals == nil {
+    fmt.Printf("%s doesn't exist on SDFS.\n", sdfsFileName)
+  } else {
+    for _, val := range vals {
+      fmt.Printf("%d, ", val)
+    }
+    fmt.Println()
+  }
+}
+
+/**
+  Search the file map with key @sdfsFileName
+*/
+func searchFileMap(sdfsFileName string) []uint32 {
   for k, v := range fileMap {
     if k == sdfsFileName {
-      for _, val := range v.GetValues() {
-        fmt.Printf("%d, ", val)
-      }
-      fmt.Println()
-      break
+      return v.GetValues()
     }
   }
+  return nil
 }
 
 /**
@@ -109,29 +201,35 @@ func updateFileMap(sdfsFileName string, vmID uint32) {
     fileMap[sdfsFileName] = new(heartbeat.MapValues)
   }
 	fileMap[sdfsFileName] = &node_ids
+
+  //now update the timestamp for put file op
+  if updateMap[sdfsFileName] == nil {
+    updateMap[sdfsFileName] = new(google_protobuf.Timestamp)
+  }
+  updateMap[sdfsFileName] = ptypes.TimestampNow()
 }
 
 /**
-	Make local replica of file with name @sdfsFileName,@localFileName should already exist.
+	Make local replica of file with name @sdfsFileName, @localFileName should already exist.
 	https://stackoverflow.com/questions/21060945/simple-way-to-copy-a-file-in-golang
 */
 func makeLocalReplicate(sdfsFileName string, localFileName string) {
 	in, err := os.Open("/files/" + localFileName)
   if err != nil {
-		fmt.Println("Error: ", err)
+		fmt.Println("Error (while opening during local replication): ", err)
 		myLog.Fatal(err)
     return
   }
   defer in.Close()
   out, err := os.Create("/files/" + sdfsFileName)
   if err != nil {
-		fmt.Println("Error: ", err)
+		fmt.Println("Error (while creating local replication): ", err)
 		myLog.Fatal(err)
     return
   }
 	defer out.Close()
   if _, err = io.Copy(out, in); err != nil {
-		fmt.Println("Error: ", err)
+		fmt.Println("Error (while copying locally): ", err)
 		myLog.Fatal(err)
     return
   }
@@ -153,13 +251,25 @@ func replicate(sdfsFileName string, nodeID int) {
 		firstPeer = 1
 		secondPeer = 2
 	}
-	fi, err := ioutil.ReadFile(sdfsFileName)
-	if err != nil {
-		fmt.Printf("error %s\n", err)
+	fi := readFile(sdfsFileName)
+	if fi == nil {
+		fmt.Println("error in reading file (while replicating).")
 		return
 	}
 	sendSDFSMessage(firstPeer, "file", sdfsFileName, fi)
 	sendSDFSMessage(secondPeer, "file", sdfsFileName, fi)
+}
+
+/**
+  Read file into byte array.
+*/
+func readFile(sdfsFileName string) []byte {
+  fi, err := ioutil.ReadFile(sdfsFileName)
+  if err != nil {
+    fmt.Printf("Error (while reading file into byte array): %s\n", err)
+    return nil
+  }
+  return fi
 }
 
 /**
@@ -182,13 +292,13 @@ func sendSDFSMessage(nodeID int, message string, sdfsFileName string, file []byt
 	//Marshal the msg
 	m, err := proto.Marshal(sdfsPacket)
 	if err != nil {
-		fmt.Printf("error %s\n", err)
+		fmt.Printf("Error (while marshaling): %s\n", err)
 		return
 	}
 
 	conn, err := net.Dial("udp", fmt.Sprintf(nodeName, nodeID, sdfsPort))
 	if err != nil {
-		fmt.Printf("error %s\n", err)
+		fmt.Printf("Error (in UDP connection): %s\n", err)
 		return
 	}
 	//defer close and write message to tcp connection
@@ -203,7 +313,7 @@ func receiveSDFSMessage() {
 	//set up tcp listener
 	conn, err := net.ListenPacket("udp", sdfsPort)
 	if err != nil {
-		fmt.Printf("error %s\n", err)
+		fmt.Printf("Error (while receiving UDP msg): %s\n", err)
 		return
 	}
 	defer conn.Close()
@@ -220,12 +330,12 @@ func receiveSDFSMessage() {
 		// continue listenning
 		n, addr, err := conn.ReadFrom(buf)
 		if err != nil {
-			fmt.Println("error: ", err)
+			fmt.Println("Error (while reading into buffer): ", err)
 			return
 		}
 		sdfsMsg := &heartbeat.SdfsPacket{}
 		if err := proto.Unmarshal(buf[0:n], sdfsMsg); err != nil {
-			fmt.Printf("Failed. Error: %s\n", err)
+			fmt.Printf("Error (while unmarshaling): %s\n", err)
 			return
 		}
 		// fmt.Println("n: ", n)
@@ -241,10 +351,27 @@ func receiveSDFSMessage() {
 */
 func handleRequest(sdfsMsg *heartbeat.SdfsPacket) {
   switch sdfsMsg.GetMsg() {
-    case "add":
+    case "add": //add a file to fileMap
       updateFileMap(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetSource())
-    case "file":
+    case "file": //save a file locally (used w replication)
       saveFile(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetFile())
+    case "retrieve": //retrieve a file from a replica (used w get)
+      fi := readFile(sdfsMsg.GetSdfsFileName())
+      if fi == nil {
+        fmt.Println("Error (in GET, while reading file from replica).")
+        return
+      }
+      sendSDFSMessage(int(sdfsMsg.GetSource()), "getFile", sdfsMsg.GetSdfsFileName(),
+      fi)
+    case "getFile": //save file with local file name (used w get)
+      saveFile(localFile, sdfsMsg.GetFile())
+    case "deletePrimary": //delete file from filemap (only applicable on primaryMaster, used w delete)
+      _, exist := fileMap[sdfsMsg.GetSdfsFileName()]
+      if exist {
+        delete(fileMap, sdfsMsg.GetSdfsFileName())
+      }
+    case "delete": //delete file locally and update filemap
+      deleteHelper(sdfsMsg.GetSdfsFileName())
     // case "ls":
     //   loc := fileMap[sdfsMsg.GetSdfsFileName()].GetValues()
     //   locations := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(loc)), ","), "[]")
@@ -265,7 +392,7 @@ func saveFile(sdfsFileName string, file []byte) {
   //TODO: might have to decode file base64.StdEncoding.DecodeString
   err := ioutil.WriteFile("/files/" + sdfsFileName, file, os.FileMode(permission))
   if err != nil {
-    fmt.Println("Error saving file locally (replication): ", err)
+    fmt.Println("Error (while saving file): ", err)
     return
   }
   currStored = append(currStored, sdfsFileName)
