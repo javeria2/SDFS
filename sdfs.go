@@ -105,6 +105,9 @@ func updateFileMap(sdfsFileName string, vmID uint32) {
   vals = append(vals, firstPeer)
   vals = append(vals, secondPeer)
   node_ids.Values = vals
+  if fileMap[sdfsFileName] == nil {
+    fileMap[sdfsFileName] = new(heartbeat.MapValues)
+  }
 	fileMap[sdfsFileName] = &node_ids
 }
 
