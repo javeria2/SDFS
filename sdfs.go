@@ -264,7 +264,7 @@ func replicate(sdfsFileName string, nodeID int) {
   Read file into byte array.
 */
 func readFile(sdfsFileName string) []byte {
-  fi, err := ioutil.ReadFile(sdfsFileName)
+  fi, err := ioutil.ReadFile("files/" + sdfsFileName)
   if err != nil {
     fmt.Printf("Error (while reading file into byte array): %s\n", err)
     return nil
