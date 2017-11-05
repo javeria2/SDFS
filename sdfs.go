@@ -8,24 +8,24 @@ import (
   "os"
   "net"
   "time"
-  "strings"
   "github.com/golang/protobuf/proto"
 )
-
+//TODO: handle ctrl+C and send filemap back, OR line 353, update filemap accordingly (remove stuff).
+//whenever a node joins, look into files folder and delete everything.
 /****************************************/
 /****************  SDFS  ****************/
 /****************************************/
 const (
-	primaryMaster   = 1
-	secondaryMaster = 2
-	thirdMaster     = 3
-	sdfsPort        = ":4040"
+	sdfsPort = ":4040"
 )
 
 var (
-  fileMap    = make(map[string][]uint32)
-  currStored []string
-	sdfsPacket = &heartbeat.SdfsPacket{Source: uint32(vmID)}
+  primaryMaster   = 1
+  secondaryMaster = 2
+  thirdMaster     = 3
+  fileMap         = make(map[string]*heartbeat.MapValues)
+  currStored      []string
+	sdfsPacket      = &heartbeat.SdfsPacket{Source: uint32(vmID)}
 )
 
 /**
@@ -38,8 +38,8 @@ func putFile(localFileName string, sdfsFileName string) {
 		// not main master, send msg to master and add files into filemap
 		sendSDFSMessage(primaryMaster, "add", sdfsFileName, nil)
 	}
-	makeLocalReplicate(sdfsFileName, localFileName)
-	replicate(sdfsFileName, vmID)
+	// makeLocalReplicate(sdfsFileName, localFileName)
+	// replicate(sdfsFileName, vmID)
 }
 
 /**
@@ -71,7 +71,17 @@ func deleteFile(sdfsFileName string) {
 */
 func lsFile(sdfsFileName string) {
   //simply echo back the request to the primary node
-  sendSDFSMessage(primaryMaster, "ls", sdfsFileName, nil)
+  // sendSDFSMessage(primaryMaster, "ls", sdfsFileName, nil)
+  fmt.Printf("%s is present on VMs with VM ids: ", sdfsFileName)
+  for k, v := range fileMap {
+    if k == sdfsFileName {
+      for _, val := range v.GetValues() {
+        fmt.Printf("%d, ", val)
+      }
+      fmt.Println()
+      break
+    }
+  }
 }
 
 /**
@@ -88,9 +98,13 @@ func updateFileMap(sdfsFileName string, vmID uint32) {
 		secondPeer = 2
 	}
 	//update the current nodes filemap
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], vmID)
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], firstPeer)
-	fileMap[sdfsFileName] = append(fileMap[sdfsFileName], secondPeer)
+  var node_ids *heartbeat.MapValues /* used for filemap value */
+  var vals []uint32
+  vals = append(vals, vmID)
+  vals = append(vals, firstPeer)
+  vals = append(vals, secondPeer)
+  node_ids.Values = vals
+	fileMap[sdfsFileName] = node_ids
 }
 
 /**
@@ -98,14 +112,14 @@ func updateFileMap(sdfsFileName string, vmID uint32) {
 	https://stackoverflow.com/questions/21060945/simple-way-to-copy-a-file-in-golang
 */
 func makeLocalReplicate(sdfsFileName string, localFileName string) {
-	in, err := os.Open(localFileName)
+	in, err := os.Open("/files/" + localFileName)
   if err != nil {
 		fmt.Println("Error: ", err)
 		myLog.Fatal(err)
     return
   }
   defer in.Close()
-  out, err := os.Create(sdfsFileName)
+  out, err := os.Create("/files/" + sdfsFileName)
   if err != nil {
 		fmt.Println("Error: ", err)
 		myLog.Fatal(err)
@@ -227,14 +241,14 @@ func handleRequest(sdfsMsg *heartbeat.SdfsPacket) {
       updateFileMap(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetSource())
     case "file":
       saveFile(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetFile())
-    case "ls":
-      loc := fileMap[sdfsMsg.GetSdfsFileName()]
-      locations := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(loc)), ","), "[]")
-      //send the file locations back to source from primary master, rest is handled in the default case
-      sendSDFSMessage(int(sdfsMsg.GetSource()), locations, sdfsMsg.GetSdfsFileName(), nil)
-    default: //default case is only when we get the file locations back (ls), simply print them out
-      fmt.Printf("%s is present on VMs with VM ids: %s\n", sdfsMsg.GetSdfsFileName(),
-      sdfsMsg.GetMsg())
+    // case "ls":
+    //   loc := fileMap[sdfsMsg.GetSdfsFileName()].GetValues()
+    //   locations := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(loc)), ","), "[]")
+    //   //send the file locations back to source from primary master, rest is handled in the default case
+    //   sendSDFSMessage(int(sdfsMsg.GetSource()), locations, sdfsMsg.GetSdfsFileName(), nil)
+    // default: //default case is only when we get the file locations back (ls), simply print them out
+    //   fmt.Printf("%s is present on VMs with VM ids: %s\n", sdfsMsg.GetSdfsFileName(),
+    //   sdfsMsg.GetMsg())
   }
 }
 
@@ -245,7 +259,7 @@ func saveFile(sdfsFileName string, file []byte) {
   // set permissions, allow r/w/e by everyone in this case
   permission := 0777
   //TODO: might have to decode file base64.StdEncoding.DecodeString
-  err := ioutil.WriteFile(sdfsFileName, file, os.FileMode(permission))
+  err := ioutil.WriteFile("/files/" + sdfsFileName, file, os.FileMode(permission))
   if err != nil {
     fmt.Println("Error saving file locally (replication): ", err)
     return
@@ -259,8 +273,8 @@ func saveFile(sdfsFileName string, file []byte) {
 func printFileMap() {
 	fmt.Println("name id")
 	for k, v := range fileMap {
-		for _, idx := range v {
-			fmt.Printf("%s %d\n", k, idx)
+		for _, val := range v.GetValues() {
+			fmt.Printf("%s %d\n", k, val)
 		}
 	}
 }
@@ -276,4 +290,18 @@ func isMaster() {
   } else {
     fmt.Println("Current node is not the primary master.")
   }
+}
+
+/**
+  Re-election of the master node on failing
+*/
+func masterElection(){
+    tempMaster := 1
+    if membershipList[primaryMaster-1].GetStatus() != alive {
+        tempMaster = secondaryMaster
+        if membershipList[secondaryMaster-1].GetStatus() != alive {
+            tempMaster = thirdMaster
+        }
+        primaryMaster = tempMaster
+    }
 }

@@ -22,15 +22,20 @@ message Member {
     google.protobuf.Timestamp last_join = 5;
 }
 
+message MapValues {
+  repeated uint32 values = 1;
+}
+
 message MembershipList {
     uint32 source = 1;
     repeated Member members = 2;
+    map<string, MapValues> file_map = 3;
 }
 
 message SdfsPacket {
     uint32 source = 1;
     string msg = 2;
     string sdfs_file_name = 3;
-    map<string, uint32> file_map = 4;
+    map<string, MapValues> file_map = 4;
     bytes file = 5;
 }

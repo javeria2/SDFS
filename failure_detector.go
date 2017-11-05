@@ -94,6 +94,7 @@ func sendMsg() {
 
 	// Marshal membership list and send
 	allMembership.Members = membershipList
+	allMembership.FileMap = fileMap //comes from sdfs.go
 	hb, err := proto.Marshal(allMembership) // to binary
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
@@ -223,6 +224,9 @@ func nodeLeave() {
 		fmt.Println("This node (", myID, ") voluntarily left.")
 	}
 	fmt.Println()
+	if vmID == primaryMaster { //comes from sdfs.go
+		masterElection() //relect master if current master has left.
+	}
 }
 
 func handleUserInput() {
@@ -276,6 +280,7 @@ func handleUserInput() {
 
 func updateMembershipLists(newHeartbeat *heartbeat.MembershipList) {
 	newList := newHeartbeat.Members
+	fileMap = newHeartbeat.GetFileMap() //comes from sdfs.go
 	if newHeartbeat.Source != uint32(myID) {
 		if (membershipList[introducerID].GetStatus() != alive) && (membershipList[introducerID].GetStatus() != start) && (newHeartbeat.Source == introducerID) {
 			membershipList[introducerID].Status = alive
@@ -351,6 +356,9 @@ func updateMembershipLists(newHeartbeat *heartbeat.MembershipList) {
 			if membershipList[neighborID].Status == alive {
 				if time.Now().After(myTimestamps[neighborID].localTime.Add(1950 * time.Millisecond)) {
 					membershipList[neighborID].Status = crash
+					if neighborID == primaryMaster { //comes from sdfs.go
+						masterElection()
+					}
 					myLog.Printf("Node %d crashed (by detection).\n", neighborID)
 				}
 			}
