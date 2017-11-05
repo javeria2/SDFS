@@ -8,16 +8,15 @@ import (
   "os"
   "net"
   "time"
-  "encoding/base64"
   "github.com/golang/protobuf/proto"
   "github.com/golang/protobuf/ptypes"
   google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 )
 //TODO: 1) handle ctrl+C and send filemap back, OR line 353, update filemap accordingly (remove stuff).
-//Shiming already does that, check line 672 in backup.go
-//2) whenever a node joins, look into files folder and delete everything.
+//Shiming already does that, check line 672 in backup.go - Done
+//2) whenever a node joins, look into files folder and delete everything. - Done
 //3) dynamic update of replicas by looking into the membership list
-//4) write prompt within 1 minute
+//4) write prompt within 1 minute - Done
 /****************************************/
 /****************  SDFS  ****************/
 /****************************************/
@@ -215,7 +214,7 @@ func updateFileMap(sdfsFileName string, vmID uint32) {
 	https://stackoverflow.com/questions/21060945/simple-way-to-copy-a-file-in-golang
 */
 func makeLocalReplicate(sdfsFileName string, localFileName string) {
-	in, err := os.Open("files/" + localFileName)
+	in, err := os.Open(localFileName)
   if err != nil {
 		fmt.Println("Error (while opening during local replication): ", err)
 		myLog.Fatal(err)
@@ -391,15 +390,13 @@ func saveFile(sdfsFileName string, file []byte) {
   // set permissions, allow r/w/e by everyone in this case
   permission := 0777
   //TODO: might have to decode file base64.StdEncoding.DecodeString
-  fmt.Println("byte array: " + string(file))
-  b, _ := base64.StdEncoding.DecodeString("AAAAAQID")
-  fmt.Println("decoded: " + string(b))
   err := ioutil.WriteFile("files/" + sdfsFileName, file, os.FileMode(permission))
   if err != nil {
     fmt.Println("Error (while saving file): ", err)
     return
   }
   currStored = append(currStored, sdfsFileName)
+  fmt.Println("File saved (or replicated)!")
 }
 
 /**
@@ -430,7 +427,7 @@ func isMaster() {
 /**
   Re-election of the master node on failing
 */
-func masterElection(){
+func masterElection() {
     tempMaster := 1
     if membershipList[primaryMaster-1].GetStatus() != alive {
         tempMaster = secondaryMaster
@@ -439,4 +436,39 @@ func masterElection(){
         }
         primaryMaster = tempMaster
     }
+}
+
+/**
+  Delete (empty) files folder whenever a node joins, and create it again.
+*/
+func deleteAllSdfsFiles() {
+  permission := 0777
+  os.RemoveAll("files/")
+  os.MkdirAll("files/", os.FileMode(permission))
+}
+
+/**
+  Update the fileMap, used periodically by primary master to check for crashed nodes.
+*/
+func updatePrimaryFileMap() {
+  for idx:=0; idx<listLength; idx++ {
+    if membershipList[idx].GetStatus() != alive {
+      removeNodeFromFileMaps(membershipList[idx].GetId() + 1)
+    }
+  }
+}
+
+/**
+  Remove crashed node from file map and update map.
+*/
+func removeNodeFromFileMaps(idx uint32) {
+  for _, v := range fileMap {
+    vals := v.GetValues()
+    for i, num := range vals {
+      if num == idx {
+        vals = append(vals[:i], vals[i+1:]...)
+        v.Values = vals
+      }
+    }
+  }
 }

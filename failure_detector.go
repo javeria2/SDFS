@@ -96,7 +96,7 @@ func sendMsg() {
 	allMembership.Members = membershipList
 	allMembership.FileMap = fileMap //comes from sdfs.go
 	allMembership.UpdateMap = updateMap //comes from sdfs.go
-	
+
 	hb, err := proto.Marshal(allMembership) // to binary
 	if err != nil {
 		fmt.Printf("error has occured! %s\n", err)
@@ -209,6 +209,7 @@ func nodeJoin() {
 	if iHaveLeft == false {
 		fmt.Println("This node (", myID, ") has already joined.")
 	} else {
+		deleteAllSdfsFiles() //comes from sdfs.go
 		initialize()
 		iHaveLeft = false
 		fmt.Println("This node (", myID, ") joined.")
@@ -368,6 +369,10 @@ func updateMembershipLists(newHeartbeat *heartbeat.MembershipList) {
 					membershipList[neighborID].Status = crash
 					if neighborID == primaryMaster { //comes from sdfs.go
 						masterElection()
+					}
+					// on the primary master, update the file map if the crashed node exist as a value
+					if vmID == primaryMaster {
+						removeNodeFromFileMaps(uint32(neighborID))
 					}
 					myLog.Printf("Node %d crashed (by detection).\n", neighborID)
 				}
@@ -566,6 +571,9 @@ func main() {
 	// use timer to send heartbeat
 	ticker = time.NewTicker(650 * time.Millisecond) // send every ? seconds
 	for _ = range ticker.C {
+		//if vmID == primaryMaster { //comes from sdfs.go
+			//updatePrimaryFileMap()
+		//}
 		sendMsg()
 	}
 }
