@@ -8,6 +8,7 @@ import (
   "os"
   "net"
   "time"
+  "encoding/base64"
   "github.com/golang/protobuf/proto"
   "github.com/golang/protobuf/ptypes"
   google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
@@ -390,6 +391,9 @@ func saveFile(sdfsFileName string, file []byte) {
   // set permissions, allow r/w/e by everyone in this case
   permission := 0777
   //TODO: might have to decode file base64.StdEncoding.DecodeString
+  fmt.Println("byte array: " + string(file))
+  b, _ := base64.StdEncoding.DecodeString("AAAAAQID")
+  fmt.Println("decoded: " + string(b))
   err := ioutil.WriteFile("files/" + sdfsFileName, file, os.FileMode(permission))
   if err != nil {
     fmt.Println("Error (while saving file): ", err)
