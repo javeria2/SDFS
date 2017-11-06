@@ -550,3 +550,7 @@ func electReplication(replica int, replicationNumber int) {
   	}
 	}
 }
+
+func showReplicas() {
+  fmt.Printf("%d replicas are %d and %d\n", vmID, replica1, replica2)
+}
