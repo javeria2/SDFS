@@ -369,14 +369,15 @@ func updateMembershipLists(newHeartbeat *heartbeat.MembershipList) {
 			if membershipList[neighborID].Status == alive {
 				if time.Now().After(myTimestamps[neighborID].localTime.Add(1950 * time.Millisecond)) {
 					membershipList[neighborID].Status = crash
+					// just a ocmment
 					// masterElection()
 					// if vmID == primaryMaster { //comes from sdfs.go
 						// updatePrimaryFileMap()
 					// }
-					removeNodeFromFileMaps(uint32(neighborID + 1))
-					if vmID != primaryMaster {
-						sendSDFSMessage(primaryMaster, "deleteValue", strconv.Itoa(neighborID + 1), nil)
-					}
+					//removeNodeFromFileMaps(uint32(neighborID + 1))
+					//if vmID != primaryMaster {
+						//sendSDFSMessage(primaryMaster, "deleteValue", strconv.Itoa(neighborID + 1), nil)
+					//}
 					myLog.Printf("Node %d crashed (by detection).\n", neighborID)
 				}
 			}
