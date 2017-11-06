@@ -334,7 +334,7 @@ func receiveSDFSMessage() {
 			fmt.Printf("Error (while unmarshaling): %s\n", err)
 			return
 		}
-		// fmt.Println("n: ", n)
+		// fmt.Println("n: ", n)Status
 		// fmt.Println(proto.MarshalTextString(sdfsMsg))
 		myLog.Printf("Message sent from node %d (IP: %s).\n", sdfsMsg.GetSource(), addr.String())
     //handle the requests
@@ -446,9 +446,9 @@ func isMaster() {
 */
 func masterElection() {
     tempMaster := 1
-    if membershipList[primaryMaster-1].GetStatus() != alive && membershipList[primaryMaster-1].GetStatus() != start {
+    if membershipList[primaryMaster-1].Status != alive && membershipList[primaryMaster-1].Status != start {
         tempMaster = secondaryMaster
-        if membershipList[secondaryMaster-1].GetStatus() != alive && membershipList[secondaryMaster-1].GetStatus() != start {
+        if membershipList[secondaryMaster-1].Status != alive && membershipList[secondaryMaster-1].Status != start {
             tempMaster = thirdMaster
         }
         primaryMaster = tempMaster
@@ -469,7 +469,7 @@ func deleteAllSdfsFiles() {
 */
 func updatePrimaryFileMap() {
   for idx:=0; idx<listLength; idx++ {
-    if membershipList[idx].GetStatus() != alive {
+    if membershipList[idx].Status != alive {
       removeNodeFromFileMaps(membershipList[idx].GetId() + 1)
     }
   }
@@ -499,7 +499,7 @@ func updateReplicationNodes() {
 }
 
 func checkReplication(replica int, replicationNumber int) {
-  if membershipList[replica-1].GetStatus() == crash || membershipList[replica-1].GetStatus() == leave {
+  if membershipList[replica-1].Status == crash || membershipList[replica-1].Status == leave {
     electReplication(replica-1, replicationNumber)
   }
 }
@@ -515,7 +515,7 @@ func electReplication(replica int, replicationNumber int) {
 	  } else{
   		idx = count
   	}
-  	if membershipList[idx].GetStatus() == alive {
+  	if membershipList[idx].Status == alive {
   		if(replicationNumber == 1) {
 		    if(idx!=vmID-1 && idx!= replica2-1){
 	        replica1 = idx+1
