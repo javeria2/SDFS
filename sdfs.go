@@ -14,11 +14,6 @@ import (
   "github.com/golang/protobuf/ptypes"
   google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
 )
-//TODO: 1) handle ctrl+C and send filemap back, OR line 353, update filemap accordingly (remove stuff).
-//Shiming already does that, check line 672 in backup.go - Done
-//2) whenever a node joins, look into files folder and delete everything. - Done
-//3) dynamic update of replicas by looking into the membership list
-//4) write prompt within 1 minute - Done
 /****************************************/
 /****************  SDFS  ****************/
 /****************************************/
