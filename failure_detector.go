@@ -556,12 +556,12 @@ func introducerSelfJoin() {
 
 func main() {
 	// create log file
-	logFile, err := os.Create(fileName)
-	defer logFile.Close()
-	if err != nil {
-		fmt.Println("didn't create the log file!" + fileName)
-	}
-	myLog = log.New(logFile, "[ vm"+strconv.Itoa(vmID)+" ] ", log.LstdFlags) //create new logger
+	// logFile, err := os.Create(fileName)
+	// defer logFile.Close()
+	// if err != nil {
+	// 	fmt.Println("didn't create the log file!" + fileName)
+	// }
+	// myLog = log.New(logFile, "[ vm"+strconv.Itoa(vmID)+" ] ", log.LstdFlags) //create new logger
 
 	initialize()
 	// tempTest()
