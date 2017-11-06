@@ -28,8 +28,8 @@ const (
 
 var (
   primaryMaster   = 1
-  secondaryMaster = 2
-  thirdMaster     = 3
+  secondaryMaster = primaryMaster + 1
+  thirdMaster     = secondaryMaster + 1
   fileMap         = make(map[string]*heartbeat.MapValues)
   updateMap       = make(map[string]*google_protobuf.Timestamp)
 	sdfsPacket      = &heartbeat.SdfsPacket{Source: uint32(vmID)}
@@ -90,7 +90,7 @@ func store() {
   fmt.Printf("Files currently being stored on node %d are: \n", vmID)
   for idx, file := range fileList {
     if idx != 0 {
-      fmt.Println(file)      
+      fmt.Println(file)
     }
   }
 }
@@ -105,7 +105,6 @@ func getAllFiles(searchDir string) []string {
     fileList = append(fileList, path)
     return nil
   })
-  fmt.Println("STOREEEE :", fileList)
   return fileList
 }
 
@@ -177,11 +176,11 @@ func deleteHelper(sdfsFileName string) {
  File op: LSFILE
 */
 func lsFile(sdfsFileName string) {
-  fmt.Printf("%s is present on VMs with VM ids: ", sdfsFileName)
   vals := searchFileMap(sdfsFileName)
   if vals == nil {
     fmt.Printf("%s doesn't exist on SDFS.\n", sdfsFileName)
   } else {
+    fmt.Printf("%s is present on VMs with VM ids: ", sdfsFileName)
     for _, val := range vals {
       fmt.Printf("%d, ", val)
     }

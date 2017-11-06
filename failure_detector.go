@@ -367,9 +367,6 @@ func updateMembershipLists(newHeartbeat *heartbeat.MembershipList) {
 			if membershipList[neighborID].Status == alive {
 				if time.Now().After(myTimestamps[neighborID].localTime.Add(1950 * time.Millisecond)) {
 					membershipList[neighborID].Status = crash
-					if neighborID == primaryMaster { //comes from sdfs.go
-						masterElection()
-					}
 					myLog.Printf("Node %d crashed (by detection).\n", neighborID)
 				}
 			}
@@ -579,6 +576,7 @@ func main() {
 		if vmID == primaryMaster { //comes from sdfs.go
 			updatePrimaryFileMap()
 		}
+		masterElection()
 		sendMsg()
 	}
 }
