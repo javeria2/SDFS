@@ -268,7 +268,7 @@ func replicate(sdfsFileName string, nodeID int) {
 		firstPeer = 1
 		secondPeer = 2
 	}
-	fi := readFile(sdfsFileName)
+	fi := readFile(sdfsFileName, 1)
 	if fi == nil {
 		fmt.Println("error in reading file (while replicating).")
 		return
@@ -278,10 +278,16 @@ func replicate(sdfsFileName string, nodeID int) {
 }
 
 /**
-  Read file into byte array.
+  Read file into byte array. @getOrPut 1 for files/ 0 for not.
 */
-func readFile(sdfsFileName string) []byte {
-  fi, err := ioutil.ReadFile("files/" + sdfsFileName)
+func readFile(sdfsFileName string, getOrPut int) []byte {
+  var filePath string
+  if getOrPut == 0 {
+    filePath = sdfsFileName
+  } else {
+    filePath = "files/" + sdfsFileName
+  }
+  fi, err := ioutil.ReadFile(filePath)
   if err != nil {
     fmt.Printf("Error (while reading file into byte array): %s\n", err)
     return nil
@@ -373,7 +379,7 @@ func handleRequest(sdfsMsg *heartbeat.SdfsPacket) {
     case "file": //save a file locally (used w replication)
       saveFile(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetFile(), 1)
     case "retrieve": //retrieve a file from a replica (used w get)
-      fi := readFile(sdfsMsg.GetSdfsFileName())
+      fi := readFile(sdfsMsg.GetSdfsFileName(), 1)
       if fi == nil {
         fmt.Println("Error (in GET, while reading file from replica).")
         return
@@ -544,7 +550,7 @@ func electReplication(replica int, replicationNumber int) {
           if len(fileList) != 1 {
             for index, file := range fileList {
               if index != 0 {
-                fi := readFile(file)
+                fi := readFile(file, 0)
                 sendSDFSMessage(replica1, "getFile", file, fi)
               }
             }
@@ -559,7 +565,7 @@ func electReplication(replica int, replicationNumber int) {
             if len(fileList) != 1 {
               for index, file := range fileList {
                 if index != 0 {
-                  fi := readFile(file)
+                  fi := readFile(file, 0)
                   sendSDFSMessage(replica2, "getFile", file, fi)
                 }
               }
