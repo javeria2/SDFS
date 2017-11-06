@@ -123,18 +123,9 @@ func getFile(localFileName string, sdfsFileName string) {
  File op: DELETE
 */
 func deleteFile(sdfsFileName string) {
-  var firstPeer = vmID + 1
-  var secondPeer = vmID + 2
-  if secondPeer > 10 {
-    secondPeer = 1
-  }
-  if firstPeer > 10 {
-    firstPeer = 1
-    secondPeer = 2
-  }
   // tell replicas to delete the file
-  sendSDFSMessage(firstPeer, "delete", sdfsFileName, nil)
-  sendSDFSMessage(secondPeer, "delete", sdfsFileName, nil)
+  sendSDFSMessage(replica1, "delete", sdfsFileName, nil)
+  sendSDFSMessage(replica2, "delete", sdfsFileName, nil)
 
   //delete on self
   deleteHelper(sdfsFileName)
@@ -199,21 +190,12 @@ func searchFileMap(sdfsFileName string) []uint32 {
 	Utility method to update current nodes filemap.
 */
 func updateFileMap(sdfsFileName string, vmID uint32) {
-	var firstPeer = vmID + 1
-	var secondPeer = vmID + 2
-	if secondPeer > 10 {
-		secondPeer = 1
-	}
-	if firstPeer > 10 {
-		firstPeer = 1
-		secondPeer = 2
-	}
 	//update the current nodes filemap
   var node_ids heartbeat.MapValues /* used for filemap value */
   var vals []uint32
   vals = append(vals, vmID)
-  vals = append(vals, firstPeer)
-  vals = append(vals, secondPeer)
+  vals = append(vals, uint32(replica1))
+  vals = append(vals, uint32(replica2))
   node_ids.Values = vals
   if fileMap[sdfsFileName] == nil {
     fileMap[sdfsFileName] = new(heartbeat.MapValues)
@@ -259,22 +241,13 @@ func makeLocalReplicate(sdfsFileName string, localFileName string) {
 	Replicate the file with name sdfsFileName on nodeID + 1, nodeID + 2.
 */
 func replicate(sdfsFileName string, nodeID int) {
-	var firstPeer = nodeID + 1
-	var secondPeer = nodeID + 2
-	if secondPeer > 10 {
-		secondPeer = 1
-	}
-	if firstPeer > 10 {
-		firstPeer = 1
-		secondPeer = 2
-	}
 	fi := readFile(sdfsFileName, 1)
 	if fi == nil {
 		fmt.Println("error in reading file (while replicating).")
 		return
 	}
-	sendSDFSMessage(firstPeer, "file", sdfsFileName, fi)
-	sendSDFSMessage(secondPeer, "file", sdfsFileName, fi)
+	sendSDFSMessage(replica1, "file", sdfsFileName, fi)
+	sendSDFSMessage(replica2, "file", sdfsFileName, fi)
 }
 
 /**
