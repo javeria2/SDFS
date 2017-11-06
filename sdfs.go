@@ -7,6 +7,7 @@ import (
   "io/ioutil"
   "strconv"
   "os"
+  "strings"
   "net"
   "time"
   "path/filepath"
@@ -65,7 +66,7 @@ func putFile(localFileName string, sdfsFileName string) {
 		updateFileMap(sdfsFileName, uint32(vmID))
 	} else {
 		// not main master, send msg to master and add files into filemap
-		sendSDFSMessage(primaryMaster, "add", sdfsFileName, nil)
+		sendSDFSMessage(primaryMaster, "add", sdfsFileName + " " + strconv.Itoa(replica1) + " " + strconv.Itoa(replica2), nil)
 	}
 
 	makeLocalReplicate(sdfsFileName, localFileName)
@@ -189,13 +190,28 @@ func searchFileMap(sdfsFileName string) []uint32 {
 /**
 	Utility method to update current nodes filemap.
 */
-func updateFileMap(sdfsFileName string, vmID uint32) {
+func updateFileMap(sdfsFileName string, _id uint32) {
+  names := strings.Split(sdfsFileName, " ")
+  var firstPeer int
+  var secondPeer int
+  if len(names) == 3 {
+    firstPeer, _ = strconv.Atoi(names[1])
+    secondPeer, _ = strconv.Atoi(names[2])
+  } else {
+    firstPeer = replica1
+    secondPeer = replica2
+  }
+
 	//update the current nodes filemap
   var node_ids heartbeat.MapValues /* used for filemap value */
   var vals []uint32
-  vals = append(vals, vmID)
-  vals = append(vals, uint32(replica1))
-  vals = append(vals, uint32(replica2))
+  vals = append(vals, _id)
+  if membershipList[firstPeer - 1].Status == alive {
+    vals = append(vals, uint32(firstPeer))
+  }
+  if membershipList[secondPeer - 1].Status == alive {
+    vals = append(vals, uint32(secondPeer))
+  }
   node_ids.Values = vals
   if fileMap[sdfsFileName] == nil {
     fileMap[sdfsFileName] = new(heartbeat.MapValues)
