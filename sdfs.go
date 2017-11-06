@@ -192,12 +192,15 @@ func searchFileMap(sdfsFileName string) []uint32 {
 */
 func updateFileMap(sdfsFileName string, _id uint32) {
   names := strings.Split(sdfsFileName, " ")
+  var _fileName string
   var firstPeer int
   var secondPeer int
   if len(names) == 3 {
+    _fileName = names[0]
     firstPeer, _ = strconv.Atoi(names[1])
     secondPeer, _ = strconv.Atoi(names[2])
   } else {
+    _fileName = sdfsFileName
     firstPeer = replica1
     secondPeer = replica2
   }
@@ -213,16 +216,16 @@ func updateFileMap(sdfsFileName string, _id uint32) {
     vals = append(vals, uint32(secondPeer))
   }
   node_ids.Values = vals
-  if fileMap[sdfsFileName] == nil {
-    fileMap[sdfsFileName] = new(heartbeat.MapValues)
+  if fileMap[_fileName] == nil {
+    fileMap[_fileName] = new(heartbeat.MapValues)
   }
-	fileMap[sdfsFileName] = &node_ids
+	fileMap[_fileName] = &node_ids
 
   //now update the timestamp for put file op
-  if updateMap[sdfsFileName] == nil {
-    updateMap[sdfsFileName] = new(google_protobuf.Timestamp)
+  if updateMap[_fileName] == nil {
+    updateMap[_fileName] = new(google_protobuf.Timestamp)
   }
-  updateMap[sdfsFileName] = ptypes.TimestampNow()
+  updateMap[_fileName] = ptypes.TimestampNow()
 }
 
 /**
