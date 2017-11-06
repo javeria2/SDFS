@@ -544,7 +544,9 @@ func electReplication(replica int, replicationNumber int) {
 		    if(idx!=vmID-1 && idx!= replica2-1){
 	        replica1 = idx+1
           fileList := getAllFiles("files/")
+          fmt.Println("file list is:", fileList)
           if len(fileList) > 1 {
+            fmt.Println("file list now is:", fileList)
             for index, file := range fileList {
               if index != 0 {
                 fi := readFile(file, 0)
