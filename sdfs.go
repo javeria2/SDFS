@@ -83,13 +83,15 @@ func putFile(localFileName string, sdfsFileName string) {
 func store() {
   searchDir := "files/"
   fileList := getAllFiles(searchDir)
-  if len(fileList) == 0 {
+  if len(fileList) == 1 {
     fmt.Println("Nothing stored on this vm!")
     return
   }
   fmt.Printf("Files currently being stored on node %d are: \n", vmID)
-  for _, file := range fileList {
-    fmt.Println(file)
+  for idx, file := range fileList {
+    if idx != 0 {
+      fmt.Println(file)      
+    }
   }
 }
 
@@ -545,10 +547,12 @@ func electReplication(replica int, replicationNumber int) {
 		    if(idx!=vmID-1 && idx!= replica2-1){
 	        replica1 = idx+1
           fileList := getAllFiles("files/")
-          if len(fileList) != 0 {
-            for _, file := range fileList {
-              fi := readFile(file)
-              sendSDFSMessage(replica1, "file", file, fi)
+          if len(fileList) != 1 {
+            for index, file := range fileList {
+              if index != 0 {
+                fi := readFile(file)
+                sendSDFSMessage(replica1, "file", file, fi)
+              }
             }
           }
           sendSDFSMessage(primaryMaster, "addNewNode", strconv.Itoa(replica1), nil)
@@ -558,10 +562,12 @@ func electReplication(replica int, replicationNumber int) {
   		    if(idx!=vmID-1 && idx!= replica1-1) {
 		        replica2 = idx+1
             fileList := getAllFiles("files/")
-            if len(fileList) != 0 {
-              for _, file := range fileList {
-                fi := readFile(file)
-                sendSDFSMessage(replica2, "file", file, fi)
+            if len(fileList) != 1 {
+              for index, file := range fileList {
+                if index != 0 {
+                  fi := readFile(file)
+                  sendSDFSMessage(replica2, "file", file, fi)
+                }
               }
             }
             sendSDFSMessage(primaryMaster, "addNewNode", strconv.Itoa(replica2), nil)
