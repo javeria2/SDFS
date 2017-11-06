@@ -103,6 +103,7 @@ func getAllFiles(searchDir string) []string {
     fileList = append(fileList, path)
     return nil
   })
+  fmt.Println("STOREEEE :", fileList)
   return fileList
 }
 
@@ -374,7 +375,7 @@ func handleRequest(sdfsMsg *heartbeat.SdfsPacket) {
     case "add": //add a file to fileMap
       updateFileMap(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetSource())
     case "file": //save a file locally (used w replication)
-      saveFile(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetFile())
+      saveFile(sdfsMsg.GetSdfsFileName(), sdfsMsg.GetFile(), 1)
     case "retrieve": //retrieve a file from a replica (used w get)
       fi := readFile(sdfsMsg.GetSdfsFileName())
       if fi == nil {
@@ -384,7 +385,7 @@ func handleRequest(sdfsMsg *heartbeat.SdfsPacket) {
       sendSDFSMessage(int(sdfsMsg.GetSource()), "getFile", sdfsMsg.GetSdfsFileName(),
       fi)
     case "getFile": //save file with local file name (used w get)
-      saveFile(localFile, sdfsMsg.GetFile())
+      saveFile(localFile, sdfsMsg.GetFile(), 0)
     case "deletePrimary": //delete file from filemap (only applicable on primaryMaster, used w delete)
       _, exist := fileMap[sdfsMsg.GetSdfsFileName()]
       if exist {
@@ -420,12 +421,19 @@ func putNewReplicationToFileMap(source uint32, replica uint32) {
 
 /**
 	Save file @file locally with name @sdfsFileName
+  @getOrPut - 1 for put, 0 for get
 */
-func saveFile(sdfsFileName string, file []byte) {
+func saveFile(sdfsFileName string, file []byte, getOrPut int) {
   // set permissions, allow r/w/e by everyone in this case
   permission := 0777
+  var filePath string
+  if getOrPut == 0 {
+    filePath = sdfsFileName
+  } else {
+    filePath = "files/" + sdfsFileName
+  }
   //TODO: might have to decode file base64.StdEncoding.DecodeString
-  err := ioutil.WriteFile(sdfsFileName, file, os.FileMode(permission))
+  err := ioutil.WriteFile(filePath, file, os.FileMode(permission))
   if err != nil {
     fmt.Println("Error (while saving file): ", err)
     return
