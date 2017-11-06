@@ -369,6 +369,11 @@ func updateMembershipLists(newHeartbeat *heartbeat.MembershipList) {
 			if membershipList[neighborID].Status == alive {
 				if time.Now().After(myTimestamps[neighborID].localTime.Add(1950 * time.Millisecond)) {
 					membershipList[neighborID].Status = crash
+					masterElection()
+					updateReplicationNodes()
+					if vmID == primaryMaster { //comes from sdfs.go
+						updatePrimaryFileMap()
+					}
 					myLog.Printf("Node %d crashed (by detection).\n", neighborID)
 				}
 			}
@@ -574,11 +579,6 @@ func main() {
 	// use timer to send heartbeat
 	ticker = time.NewTicker(650 * time.Millisecond) // send every ? seconds
 	for _ = range ticker.C {
-		updateReplicationNodes()
-		if vmID == primaryMaster { //comes from sdfs.go
-			updatePrimaryFileMap()
-		}
-		masterElection()
 		sendMsg()
 	}
 }

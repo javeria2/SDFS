@@ -470,7 +470,7 @@ func deleteAllSdfsFiles() {
 func updatePrimaryFileMap() {
   for idx:=0; idx<listLength; idx++ {
     if membershipList[idx].Status != alive {
-      removeNodeFromFileMaps(membershipList[idx].GetId() + 1)
+      removeNodeFromFileMaps(membershipList[idx].Id + 1)
     }
   }
 }
@@ -520,7 +520,7 @@ func electReplication(replica int, replicationNumber int) {
 		    if(idx!=vmID-1 && idx!= replica2-1){
 	        replica1 = idx+1
           fileList := getAllFiles("files/")
-          if len(fileList) != 1 {
+          if len(fileList) > 1 {
             for index, file := range fileList {
               if index != 0 {
                 fi := readFile(file, 0)
@@ -535,7 +535,7 @@ func electReplication(replica int, replicationNumber int) {
   		    if(idx!=vmID-1 && idx!= replica1-1) {
 		        replica2 = idx+1
             fileList := getAllFiles("files/")
-            if len(fileList) != 1 {
+            if len(fileList) > 1 {
               for index, file := range fileList {
                 if index != 0 {
                   fi := readFile(file, 0)
