@@ -580,3 +580,9 @@ func electReplication(replica int, replicationNumber int) {
 func showReplicas() {
   fmt.Printf("%d replicas are %d and %d\n", vmID, replica1, replica2)
 }
+
+func showUpdateMap() {
+  for k, v := range updateMap {
+    fmt.Println("%s %12d\n", k, convertTime(v).Format(time.UnixDate))
+  }
+}
