@@ -523,7 +523,7 @@ func updateReplicationNodes() {
 }
 
 func checkReplication(replica int, replicationNumber int) {
-  if membershipList[replica-1].Status == crash || membershipList[replica-1].Status == leave {
+  if membershipList[replica-1].Status == crash {
     electReplication(replica-1, replicationNumber)
   }
 }
