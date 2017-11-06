@@ -472,9 +472,9 @@ func isMaster() {
 */
 func masterElection() {
     tempMaster := 1
-    if membershipList[primaryMaster-1].GetStatus() != alive {
+    if membershipList[primaryMaster-1].GetStatus() != alive && membershipList[primaryMaster-1].GetStatus() != start {
         tempMaster = secondaryMaster
-        if membershipList[secondaryMaster-1].GetStatus() != alive {
+        if membershipList[secondaryMaster-1].GetStatus() != alive && membershipList[secondaryMaster-1].GetStatus() != start {
             tempMaster = thirdMaster
         }
         primaryMaster = tempMaster
