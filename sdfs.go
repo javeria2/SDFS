@@ -109,7 +109,7 @@ func getAllFiles(searchDir string) []string {
 */
 func getFile(localFileName string, sdfsFileName string) {
   vals := searchFileMap(sdfsFileName)
-  if vals == nil {
+  if vals == nil || len(vals) == 0 {
     fmt.Printf("Trying to GET on a file %s which doesn't exist.\n", sdfsFileName)
   } else {
     //choose first node to get the file from
@@ -133,7 +133,6 @@ func deleteFile(sdfsFileName string) {
 
   // tell the primary node to update its filemap too
   sendSDFSMessage(primaryMaster, "deletePrimary", sdfsFileName, nil)
-  fmt.Printf("%s successfully deleted!\n", sdfsFileName)
 }
 
 /**
@@ -157,6 +156,7 @@ func deleteHelper(sdfsFileName string) {
   if exist_ {
     delete(updateMap, sdfsFileName)
   }
+  fmt.Printf("%s successfully deleted!\n", sdfsFileName)
 }
 
 /**
@@ -394,6 +394,9 @@ func handleRequest(sdfsMsg *heartbeat.SdfsPacket) {
         return
       }
       putNewReplicationToFileMap(sdfsMsg.GetSource(), uint32(num))
+    case "deleteValue":
+      _value, _ := strconv.Atoi(sdfsMsg.GetSdfsFileName())
+      removeNodeFromFileMaps(uint32(_value))
   }
 }
 
@@ -502,8 +505,10 @@ func removeNodeFromFileMaps(idx uint32) {
     vals := v.GetValues()
     for i, num := range vals {
       if num == idx {
-        vals = append(vals[:i], vals[i+1:]...)
-        v.Values = vals
+        if vals != nil && len(vals) > 0 {
+          vals = append(vals[:i], vals[i+1:]...)
+          v.Values = vals
+        }
       }
     }
   }
