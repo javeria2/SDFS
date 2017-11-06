@@ -5,9 +5,11 @@ import (
   "fmt"
   "io"
   "io/ioutil"
+  "strconv"
   "os"
   "net"
   "time"
+  "path/filepath"
   "github.com/golang/protobuf/proto"
   "github.com/golang/protobuf/ptypes"
   google_protobuf "github.com/golang/protobuf/ptypes/timestamp"
@@ -30,9 +32,10 @@ var (
   thirdMaster     = 3
   fileMap         = make(map[string]*heartbeat.MapValues)
   updateMap       = make(map[string]*google_protobuf.Timestamp)
-  currStored      []string
 	sdfsPacket      = &heartbeat.SdfsPacket{Source: uint32(vmID)}
   localFile       string
+  replica1        = vmID + 1
+  replica2        = vmID + 2
 )
 
 /**
@@ -78,10 +81,29 @@ func putFile(localFileName string, sdfsFileName string) {
   File op: STORE, Prints the files on the current node.
 */
 func store() {
-  fmt.Printf("Files currently being stored on node %d are: \n", vmID)
-  for _, val := range currStored {
-    fmt.Println(val)
+  searchDir := "files/"
+  fileList := getAllFiles(searchDir)
+  if len(fileList) == 0 {
+    fmt.Println("Nothing stored on this vm!")
+    return
   }
+  fmt.Printf("Files currently being stored on node %d are: \n", vmID)
+  for _, file := range fileList {
+    fmt.Println(file)
+  }
+}
+
+/**
+  Get list of all files in a folder.
+*/
+func getAllFiles(searchDir string) []string {
+  fileList := []string{}
+  //iterate through a folder: https://gist.github.com/francoishill/a5aca2a7bd598ef5b563
+  filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
+    fileList = append(fileList, path)
+    return nil
+  })
+  return fileList
 }
 
 /**
@@ -152,8 +174,6 @@ func deleteHelper(sdfsFileName string) {
  File op: LSFILE
 */
 func lsFile(sdfsFileName string) {
-  //simply echo back the request to the primary node
-  // sendSDFSMessage(primaryMaster, "ls", sdfsFileName, nil)
   fmt.Printf("%s is present on VMs with VM ids: ", sdfsFileName)
   vals := searchFileMap(sdfsFileName)
   if vals == nil {
@@ -236,7 +256,6 @@ func makeLocalReplicate(sdfsFileName string, localFileName string) {
   }
 	//flush the file to stable storage
   out.Sync()
-  currStored = append(currStored, sdfsFileName)
 }
 
 /**
@@ -373,14 +392,29 @@ func handleRequest(sdfsMsg *heartbeat.SdfsPacket) {
       }
     case "delete": //delete file locally and update filemap
       deleteHelper(sdfsMsg.GetSdfsFileName())
-    // case "ls":
-    //   loc := fileMap[sdfsMsg.GetSdfsFileName()].GetValues()
-    //   locations := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(loc)), ","), "[]")
-    //   //send the file locations back to source from primary master, rest is handled in the default case
-    //   sendSDFSMessage(int(sdfsMsg.GetSource()), locations, sdfsMsg.GetSdfsFileName(), nil)
-    // default: //default case is only when we get the file locations back (ls), simply print them out
-    //   fmt.Printf("%s is present on VMs with VM ids: %s\n", sdfsMsg.GetSdfsFileName(),
-    //   sdfsMsg.GetMsg())
+    case "addNewNode": //used with dynamic replication, to add new replicas to filemap
+      num, err := strconv.Atoi(sdfsMsg.GetSdfsFileName())
+      if err != nil {
+        fmt.Println("Error (while dynamic change of replica)", err)
+        return
+      }
+      putNewReplicationToFileMap(sdfsMsg.GetSource(), uint32(num))
+  }
+}
+
+/**
+  Only used by the primaryMaster, puts @replica into the key who's value contains @source
+*/
+func putNewReplicationToFileMap(source uint32, replica uint32) {
+  for _, v := range fileMap {
+    vals := v.GetValues()
+    for _, val := range vals {
+      if val == source {
+        vals = append(vals, replica)
+        v.Values = vals
+        break
+      }
+    }
   }
 }
 
@@ -391,12 +425,11 @@ func saveFile(sdfsFileName string, file []byte) {
   // set permissions, allow r/w/e by everyone in this case
   permission := 0777
   //TODO: might have to decode file base64.StdEncoding.DecodeString
-  err := ioutil.WriteFile("files/" + sdfsFileName, file, os.FileMode(permission))
+  err := ioutil.WriteFile(sdfsFileName, file, os.FileMode(permission))
   if err != nil {
     fmt.Println("Error (while saving file): ", err)
     return
   }
-  currStored = append(currStored, sdfsFileName)
   fmt.Println("File saved (or replicated)!")
 }
 
@@ -472,4 +505,61 @@ func removeNodeFromFileMaps(idx uint32) {
       }
     }
   }
+}
+
+/**
+  Dynamiccally update replcation nodes.
+*/
+func updateReplicationNodes() {
+  checkReplication(replica1, 1)
+  checkReplication(replica2, 2)
+}
+
+func checkReplication(replica int, replicationNumber int) {
+  if membershipList[replica-1].GetStatus() == crash || membershipList[replica-1].GetStatus() == leave {
+    electReplication(replica-1, replicationNumber)
+  }
+}
+
+/**
+  Dynamically send files to updated replication node.
+*/
+func electReplication(replica int, replicationNumber int) {
+  idx := replica
+  for count := replica; count < 20; count++ {
+    if(count > 9 ) {
+      idx = count - 10
+	  } else{
+  		idx = count
+  	}
+  	if membershipList[idx].GetStatus() == alive {
+  		if(replicationNumber == 1) {
+		    if(idx!=vmID-1 && idx!= replica2-1){
+	        replica1 = idx+1
+          fileList := getAllFiles("files/")
+          if len(fileList) != 0 {
+            for _, file := range fileList {
+              fi := readFile(file)
+              sendSDFSMessage(replica1, "file", file, fi)
+            }
+          }
+          sendSDFSMessage(primaryMaster, "addNewNode", strconv.Itoa(replica1), nil)
+          break
+		    }
+  		} else {
+  		    if(idx!=vmID-1 && idx!= replica1-1) {
+		        replica2 = idx+1
+            fileList := getAllFiles("files/")
+            if len(fileList) != 0 {
+              for _, file := range fileList {
+                fi := readFile(file)
+                sendSDFSMessage(replica2, "file", file, fi)
+              }
+            }
+            sendSDFSMessage(primaryMaster, "addNewNode", strconv.Itoa(replica2), nil)
+		        break
+  		    }
+  		}
+  	}
+	}
 }

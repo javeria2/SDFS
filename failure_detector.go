@@ -485,6 +485,14 @@ func tempTest() {
 }
 
 func initialize() {
+	// update replica1 and 2
+	if(replica1 > 10){ //comes from sdfs.go
+	    replica1 = replica1 - 10
+	}
+	if(replica2 > 10){
+	    replica2 = replica2 - 10
+	}
+
 	// Initialize membership list
 	myHeartbeat = 0
 	membershipList = make([]*member, listLength, listLength)
@@ -567,6 +575,7 @@ func main() {
 	// use timer to send heartbeat
 	ticker = time.NewTicker(650 * time.Millisecond) // send every ? seconds
 	for _ = range ticker.C {
+		updateReplicationNodes()
 		if vmID == primaryMaster { //comes from sdfs.go
 			updatePrimaryFileMap()
 		}
