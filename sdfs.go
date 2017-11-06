@@ -550,7 +550,7 @@ func electReplication(replica int, replicationNumber int) {
             for index, file := range fileList {
               if index != 0 {
                 fi := readFile(file)
-                sendSDFSMessage(replica1, "file", file, fi)
+                sendSDFSMessage(replica1, "getFile", file, fi)
               }
             }
           }
@@ -565,7 +565,7 @@ func electReplication(replica int, replicationNumber int) {
               for index, file := range fileList {
                 if index != 0 {
                   fi := readFile(file)
-                  sendSDFSMessage(replica2, "file", file, fi)
+                  sendSDFSMessage(replica2, "getFile", file, fi)
                 }
               }
             }
